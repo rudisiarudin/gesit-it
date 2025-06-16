@@ -1,26 +1,57 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* Variabel warna global */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f9fafb; /* abu-abu sangat muda */
+  --foreground: #111827; /* abu gelap */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Styling body */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  @apply antialiased text-base md:text-sm;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Input & Textarea standar */
+.input {
+  @apply w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+/* Animasi form muncul */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Tabel responsive tweak */
+table {
+  @apply min-w-full border-collapse;
+}
+th, td {
+  @apply px-3 py-2 text-left align-top;
+}
+thead {
+  @apply bg-gray-100 text-gray-700;
+}
+tbody tr:nth-child(even) {
+  @apply bg-gray-50;
+}
+
+/* Button utama */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all;
 }
