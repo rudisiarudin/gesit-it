@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil } from "lucide-react";
 import clsx from "clsx";
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 type Activity = {
   id: number;
@@ -34,13 +31,6 @@ const initialForm = {
   duration: "",
 };
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 export default function Page() {
   const [formData, setFormData] = useState(initialForm);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -51,20 +41,19 @@ export default function Page() {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
 
-  const fetchActivities = async () => {
-    let query = supabase.from("activities").select("*").order("created_at", { ascending: false });
-
-    if (filterIT) query = query.eq("it", filterIT);
-    if (filterDateFrom) query = query.gte("created_at", `${filterDateFrom}T00:00:00`);
-    if (filterDateTo) query = query.lte("created_at", `${filterDateTo}T23:59:59`);
-
-    const { data, error } = await query;
-
-    if (!error && data) setActivities(data as Activity[]);
-  };
-
   useEffect(() => {
-    fetchActivities();
+    const fetchData = async () => {
+      let query = supabase.from("activities").select("*").order("created_at", { ascending: false });
+
+      if (filterIT) query = query.eq("it", filterIT);
+      if (filterDateFrom) query = query.gte("created_at", `${filterDateFrom}T00:00:00`);
+      if (filterDateTo) query = query.lte("created_at", `${filterDateTo}T23:59:59`);
+
+      const { data, error } = await query;
+      if (!error && data) setActivities(data as Activity[]);
+    };
+
+    fetchData();
   }, [filterIT, filterDateFrom, filterDateTo]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -75,7 +64,7 @@ export default function Page() {
     e.preventDefault();
     setLoading(true);
 
-    let updatedData = { ...formData };
+    const updatedData = { ...formData };
 
     if (formData.status === "Completed" && editingId) {
       const existing = activities.find((a) => a.id === editingId);
@@ -98,7 +87,6 @@ export default function Page() {
 
     setFormData(initialForm);
     setShowModal(false);
-    await fetchActivities();
     setLoading(false);
   };
 
@@ -117,12 +105,13 @@ export default function Page() {
     setEditingId(activity.id);
     setShowModal(true);
   };
+
   const exportCSV = () => {
     const headers = Object.keys(initialForm).concat("created_at");
     const csvContent = [
       headers.join(","),
       ...activities.map((a) =>
-        headers.map((h) => `"${(a as any)[h] ?? ""}"`).join(",")
+        headers.map((h) => `"${(a as Record<string, string | number | null>)[h] ?? ""}"`).join(",")
       ),
     ].join("\n");
 
@@ -134,7 +123,9 @@ export default function Page() {
   };
 
   const exportExcel = async () => {
-    const XLSX = await import("xlsx");
+    // Di dalam fungsi exportExcel
+const XLSX = await import("xlsx"); // ✅ aman untuk client
+
     const ws = XLSX.utils.json_to_sheet(activities);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Activities");
@@ -302,6 +293,7 @@ export default function Page() {
           </div>
         </div>
       )}
+
       {/* Table */}
       <div className="mt-6 overflow-x-auto">
         <table className="min-w-full text-sm bg-white shadow rounded-xl overflow-hidden">
