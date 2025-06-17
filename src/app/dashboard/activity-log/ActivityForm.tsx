@@ -1,7 +1,7 @@
-// components/ActivityLog/ActivityForm.tsx
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
 export type FormData = {
   activity_name: string;
@@ -14,10 +14,8 @@ export type FormData = {
   status: string;
   duration?: string;
   updated_at?: string;
-  created_at?: string; // ✅ Tambahkan ini (opsional)
+  created_at?: string;
 };
-
-
 
 type Props = {
   formData: FormData;
@@ -42,6 +40,27 @@ export default function ActivityForm({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // ✅ Auto set IT field on mount (only if adding new activity)
+  useEffect(() => {
+    const setITFromUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const user = session?.user;
+      if (user && !editingId) {
+        const fullName = user.user_metadata?.full_name;
+        const email = user.email;
+        setFormData((prev) => ({
+          ...prev,
+          it: fullName || email || '',
+        }));
+      }
+    };
+
+    setITFromUser();
+  }, [editingId, setFormData]);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 w-full">
       <h2 className="text-lg font-semibold mb-2">
@@ -49,15 +68,15 @@ export default function ActivityForm({
       </h2>
 
       <div className="grid md:grid-cols-2 gap-4">
-        {[
+        {[ 
           { label: 'Activity Name', name: 'activity_name' },
           { label: 'Location', name: 'location' },
           { label: 'User', name: 'user' },
           {
             label: 'IT',
             name: 'it',
-            type: 'select',
-            options: ['Bendry', 'Rudi'],
+            type: 'input',
+            readOnly: true,
           },
           {
             label: 'Type',
@@ -80,7 +99,7 @@ export default function ActivityForm({
               'Other',
             ],
           },
-        ].map(({ label, name, type, options }) => (
+        ].map(({ label, name, type, options, readOnly }) => (
           <div key={name}>
             <label className="block text-sm font-medium mb-1">{label}</label>
             {type === 'select' ? (
@@ -105,6 +124,7 @@ export default function ActivityForm({
                 onChange={handleChange}
                 className="input"
                 required
+                readOnly={readOnly}
               />
             )}
           </div>
