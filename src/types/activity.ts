@@ -1,4 +1,3 @@
-// types/activity.ts
 export type Activity = {
   id: number;
   activity_name: string;
@@ -10,5 +9,6 @@ export type Activity = {
   remarks: string;
   status: string;
   created_at: string;
+  updated_at?: string; // ⬅️ Tambahkan ini jika sudah tersedia
   duration?: string;
 };
