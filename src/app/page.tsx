@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Pencil } from "lucide-react";
+import { FileText, FileSpreadsheet, File, Plus, Pencil, Check } from "lucide-react";
 import clsx from "clsx";
 
 type Activity = {
@@ -16,6 +16,7 @@ type Activity = {
   remarks: string;
   status: string;
   created_at: string;
+  updated_at?: string;
   duration?: string;
 };
 
@@ -29,32 +30,100 @@ const initialForm = {
   remarks: "",
   status: "Pending",
   duration: "",
+  updated_at: "",
 };
 
 export default function Page() {
   const [formData, setFormData] = useState(initialForm);
+  const [rawActivities, setRawActivities] = useState<Activity[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [filterIT, setFilterIT] = useState("");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
-      let query = supabase.from("activities").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("activities")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (filterIT) query = query.eq("it", filterIT);
-      if (filterDateFrom) query = query.gte("created_at", `${filterDateFrom}T00:00:00`);
-      if (filterDateTo) query = query.lte("created_at", `${filterDateTo}T23:59:59`);
-
-      const { data, error } = await query;
-      if (!error && data) setActivities(data as Activity[]);
+      if (!error && data) {
+        setRawActivities(data as Activity[]);
+      }
     };
 
     fetchData();
-  }, [filterIT, filterDateFrom, filterDateTo]);
+
+    const channel = supabase
+      .channel("realtime:activities")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "activities",
+        },
+        (payload) => {
+          const { eventType, new: newRow, old: oldRow } = payload;
+
+          setRawActivities((prev) => {
+            let updated = [...prev];
+            if (eventType === "INSERT") {
+              updated = [newRow as Activity, ...updated];
+            } else if (eventType === "UPDATE") {
+              updated = updated.map((a) =>
+                a.id === (newRow as Activity).id ? (newRow as Activity) : a
+              );
+            } else if (eventType === "DELETE") {
+              updated = updated.filter((a) => a.id !== (oldRow as Activity).id);
+            }
+            return updated;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    let filtered = [...rawActivities];
+
+    if (filterIT) {
+      filtered = filtered.filter((a) => a.it === filterIT);
+    }
+
+    if (filterDateFrom) {
+      filtered = filtered.filter(
+        (a) => new Date(a.created_at) >= new Date(`${filterDateFrom}T00:00:00`)
+      );
+    }
+
+    if (filterDateTo) {
+      filtered = filtered.filter(
+        (a) => new Date(a.created_at) <= new Date(`${filterDateTo}T23:59:59`)
+      );
+    }
+
+    if (searchKeyword.trim()) {
+      const keyword = searchKeyword.toLowerCase();
+      filtered = filtered.filter((a) =>
+        Object.values(a)
+          .join(" ")
+          .toLowerCase()
+          .includes(keyword)
+      );
+    }
+
+    setActivities(filtered);
+  }, [rawActivities, filterIT, filterDateFrom, filterDateTo, searchKeyword]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -66,31 +135,46 @@ export default function Page() {
 
     const updatedData = { ...formData };
 
-    if (formData.status === "Completed" && editingId) {
-      const existing = activities.find((a) => a.id === editingId);
-      if (existing) {
-        const start = new Date(existing.created_at);
-        const end = new Date();
-        const durationMs = end.getTime() - start.getTime();
-        const hours = Math.floor(durationMs / (1000 * 60 * 60));
-        const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-        updatedData.duration = `${hours}h ${minutes}m`;
+    if (formData.status === "Completed") {
+      const end = new Date().toISOString();
+      updatedData.updated_at = end;
+
+      if (editingId) {
+        const existing = rawActivities.find((a) => a.id === editingId);
+        if (existing) {
+          const start = new Date(existing.created_at);
+          const endTime = new Date(end);
+          const durationMs = endTime.getTime() - start.getTime();
+          const hours = Math.floor(durationMs / (1000 * 60 * 60));
+          const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+          updatedData.duration = `${hours}h ${minutes}m`;
+        }
       }
-    }
+    } 
 
-    if (editingId) {
-      await supabase.from("activities").update(updatedData).eq("id", editingId);
-      setEditingId(null);
-    } else {
-      await supabase.from("activities").insert([formData]);
-    }
+    try {
+      if (editingId) {
+        await supabase.from("activities").update(updatedData).eq("id", editingId);
+        setEditingId(null);
+      } else {
+        const cleanedData = Object.fromEntries(
+          Object.entries(updatedData).filter(([_, v]) => v !== "")
+        );
+        await supabase.from("activities").insert([cleanedData]);
+      }
 
-    setFormData(initialForm);
-    setShowModal(false);
-    setLoading(false);
+      setFormData(initialForm);
+      setShowForm(false);
+    } catch (error) {
+      console.error("Submit error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (activity: Activity) => {
+    if (activity.status === "Completed") return;
+
     setFormData({
       activity_name: activity.activity_name,
       location: activity.location,
@@ -101,9 +185,10 @@ export default function Page() {
       remarks: activity.remarks,
       status: activity.status,
       duration: activity.duration ?? "",
+      updated_at: activity.updated_at ?? "",
     });
     setEditingId(activity.id);
-    setShowModal(true);
+    setShowForm(true);
   };
 
   const exportCSV = () => {
@@ -123,9 +208,7 @@ export default function Page() {
   };
 
   const exportExcel = async () => {
-    // Di dalam fungsi exportExcel
-const XLSX = await import("xlsx"); // ✅ aman untuk client
-
+    const XLSX = await import("xlsx");
     const ws = XLSX.utils.json_to_sheet(activities);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Activities");
@@ -138,11 +221,11 @@ const XLSX = await import("xlsx"); // ✅ aman untuk client
     const doc = new jsPDF();
     autoTable(doc, {
       head: [[
-        "Activity", "Location", "User", "IT", "Type", "Category", "Status", "Duration", "Created At"
+        "Activity", "Location", "User", "IT", "Type", "Category", "Status", "Duration", "Created At", "Updated At"
       ]],
       body: activities.map((a) => [
         a.activity_name, a.location, a.user, a.it, a.type, a.category,
-        a.status, a.duration || "-", a.created_at
+        a.status, a.duration || "-", a.created_at, a.updated_at || "-"
       ]),
     });
     doc.save("activities.pdf");
@@ -152,150 +235,121 @@ const XLSX = await import("xlsx"); // ✅ aman untuk client
     <main className="max-w-6xl mx-auto px-4 py-6">
       <h1 className="text-3xl font-bold text-center mb-4">📝 IT Activity Log</h1>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-4 justify-between items-center mb-4">
-        <input
-          type="date"
-          value={filterDateFrom}
-          onChange={(e) => setFilterDateFrom(e.target.value)}
-          className="input max-w-[160px]"
-        />
-        <input
-          type="date"
-          value={filterDateTo}
-          onChange={(e) => setFilterDateTo(e.target.value)}
-          className="input max-w-[160px]"
-        />
-        <select
-          value={filterIT}
-          onChange={(e) => setFilterIT(e.target.value)}
-          className="input max-w-[160px]"
-        >
+        <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="input max-w-[160px]" />
+        <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="input max-w-[160px]" />
+        <select value={filterIT} onChange={(e) => setFilterIT(e.target.value)} className="input max-w-[160px]">
           <option value="">All IT</option>
           <option value="Bendry">Bendry</option>
           <option value="Rudi">Rudi</option>
         </select>
+        <input type="text" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} placeholder="🔍 Search..." className="input max-w-xs flex-1" />
+        <div className="flex flex-wrap gap-2 justify-end items-center ml-auto">
+  <button
+    onClick={exportCSV}
+    className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 transition"
+    title="Export to CSV"
+  >
+    <FileText size={16} />
+    CSV
+  </button>
+  <button
+    onClick={exportExcel}
+    className="flex items-center gap-2 bg-green-100 px-3 py-2 rounded hover:bg-green-200 transition"
+    title="Export to Excel"
+  >
+    <FileSpreadsheet size={16} />
+    Excel
+  </button>
+  <button
+    onClick={exportPDF}
+    className="flex items-center gap-2 bg-red-100 px-3 py-2 rounded hover:bg-red-200 transition"
+    title="Export to PDF"
+  >
+    <File size={16} />
+    PDF
+  </button>
+  <button
+    onClick={() => {
+      setShowForm(!showForm);
+      setEditingId(null);
+      setFormData(initialForm);
+    }}
+    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
+    title="Add Activity"
+  >
+    <Plus size={16} />
+    Add
+  </button>
+</div>
 
-        <div className="flex gap-2 ml-auto">
-          <button onClick={exportCSV} className="bg-gray-100 px-3 py-2 rounded hover:bg-gray-200">CSV</button>
-          <button onClick={exportExcel} className="bg-green-100 px-3 py-2 rounded hover:bg-green-200">Excel</button>
-          <button onClick={exportPDF} className="bg-red-100 px-3 py-2 rounded hover:bg-red-200">PDF</button>
-        </div>
+
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-xl relative">
-            <button
-              onClick={() => {
-                setShowModal(false);
-                setFormData(initialForm);
-                setEditingId(null);
-              }}
-              className="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xl"
-            >
-              ×
-            </button>
-            <h2 className="text-lg font-bold mb-4">{editingId ? "Edit Activity" : "New Activity"}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                {[
-                  { label: "Activity Name", name: "activity_name" },
-                  { label: "Location", name: "location" },
-                  { label: "User", name: "user" },
-                  { label: "IT", name: "it", type: "select", options: ["Bendry", "Rudi"] },
-                  { label: "Type", name: "type", type: "select", options: ["Minor", "Major"] },
-                  {
-                    label: "Category", name: "category", type: "select", options: [
-                      "Network", "Hardware", "Software", "Printer", "Email",
-                      "Access Request", "Troubleshooting", "Other",
-                    ],
-                  },
-                ].map(({ label, name, type, options }) => (
+     {showForm && (
+        <div className="bg-white p-6 rounded-xl shadow mb-6 border">
+          <h2 className="text-lg font-bold mb-4">{editingId ? "Edit Activity" : "New Activity"}</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              {[{ label: "Activity Name", name: "activity_name" }, { label: "Location", name: "location" }, { label: "User", name: "user" }, { label: "IT", name: "it", type: "select", options: ["Bendry", "Rudi"] }, { label: "Type", name: "type", type: "select", options: ["Minor", "Major"] }, { label: "Category", name: "category", type: "select", options: ["Network", "Hardware", "Software", "Printer", "Email", "Access Request", "Troubleshooting", "Other"] }]
+                .map(({ label, name, type, options }) => (
                   <div key={name}>
                     <label className="block text-sm font-medium mb-1">{label}</label>
                     {type === "select" ? (
-                      <select
-                        name={name}
-                        value={formData[name as keyof typeof formData]}
-                        onChange={handleChange}
-                        className="input"
-                        required
-                      >
+                      <select name={name} value={formData[name as keyof typeof formData]} onChange={handleChange} className="input" required>
                         <option value="">Select {label}</option>
-                        {options!.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
+                        {options!.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
                     ) : (
-                      <input
-                        name={name}
-                        value={formData[name as keyof typeof formData]}
-                        onChange={handleChange}
-                        className="input"
-                        required
-                      />
+                      <input name={name} value={formData[name as keyof typeof formData]} onChange={handleChange} className="input" required />
                     )}
                   </div>
                 ))}
-              </div>
+            </div>
 
+            <div>
+              <label className="block text-sm font-medium mb-1">Remarks</label>
+              <textarea name="remarks" value={formData.remarks} onChange={handleChange} className="input" rows={2} />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Remarks</label>
-                <textarea
-                  name="remarks"
-                  value={formData.remarks}
-                  onChange={handleChange}
-                  className="input"
-                  rows={2}
-                />
+                <label className="block text-sm font-medium mb-1">Status</label>
+                <select name="status" value={formData.status} onChange={handleChange} className="input" required>
+                  <option value="Pending">Pending</option>
+                  <option value="On Progress">On Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
               </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Status</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="input"
-                    required
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="On Progress">On Progress</option>
-                    <option value="Completed">Completed</option>
-                  </select>
-                </div>
-                {editingId && (
+              {editingId && (
+                <>
                   <div>
                     <label className="block text-sm font-medium mb-1">Duration</label>
-                    <input
-                      name="duration"
-                      value={formData.duration}
-                      onChange={handleChange}
-                      className="input"
-                      readOnly
-                      placeholder="Auto on Completed"
-                    />
+                    <input name="duration" value={formData.duration} readOnly className="input" />
                   </div>
-                )}
-              </div>
+                  {formData.updated_at && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Updated At</label>
+                      <input value={new Date(formData.updated_at).toLocaleString()} readOnly className="input" />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              >
+            <div className="flex gap-2">
+              <button type="submit" disabled={loading} className="py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                 {loading ? "Saving..." : editingId ? "Update Activity" : "Submit Activity"}
               </button>
-            </form>
-          </div>
+              <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setFormData(initialForm); }} className="py-2 px-4 bg-gray-200 rounded hover:bg-gray-300">
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
-      {/* Table */}
-      <div className="mt-6 overflow-x-auto">
+      <div className="overflow-x-auto">
         <table className="min-w-full text-sm bg-white shadow rounded-xl overflow-hidden">
           <thead className="bg-gray-100 text-left">
             <tr>
@@ -308,7 +362,9 @@ const XLSX = await import("xlsx"); // ✅ aman untuk client
               <th className="p-3">Status</th>
               <th className="p-3">Duration</th>
               <th className="p-3">Created At</th>
+              <th className="p-3">Updated At</th>
               <th className="p-3">Action</th>
+              <th className="p-3">Remarks</th>
             </tr>
           </thead>
           <tbody>
@@ -320,34 +376,27 @@ const XLSX = await import("xlsx"); // ✅ aman untuk client
                 <td className="p-3">{act.it}</td>
                 <td className="p-3">{act.type}</td>
                 <td className="p-3">{act.category}</td>
-                <td
-                  className={clsx(
-                    "p-3 font-semibold",
-                    act.status === "Completed"
-                      ? "text-green-600"
-                      : act.status === "On Progress"
-                      ? "text-yellow-600"
-                      : "text-red-600"
-                  )}
-                >
+                <td className={clsx("p-3 font-semibold", act.status === "Completed" ? "text-green-600" : act.status === "On Progress" ? "text-yellow-600" : "text-red-600")}>
                   {act.status}
                 </td>
                 <td className="p-3">{act.duration || "-"}</td>
                 <td className="p-3">{new Date(act.created_at).toLocaleString()}</td>
+                <td className="p-3">{act.updated_at ? new Date(act.updated_at).toLocaleString() : "-"}</td>
                 <td className="p-3">
-                  <button
-                    onClick={() => handleEdit(act)}
-                    className="text-blue-600 hover:text-blue-800"
-                    title="Edit"
-                  >
-                    <Pencil size={16} />
-                  </button>
+                  {act.status === "Completed" ? (
+                    <Check className="text-green-600" />
+                  ) : (
+                    <button onClick={() => handleEdit(act)} className="text-blue-600 hover:text-blue-800" title="Edit">
+                      <Pencil size={16} />
+                    </button>
+                  )}
                 </td>
+                 <td className="p-3">{act.remarks}</td>
               </tr>
             ))}
             {activities.length === 0 && (
               <tr>
-                <td colSpan={10} className="p-4 text-center text-gray-500">
+                <td colSpan={11} className="p-4 text-center text-gray-500">
                   No activities found.
                 </td>
               </tr>
@@ -356,14 +405,7 @@ const XLSX = await import("xlsx"); // ✅ aman untuk client
         </table>
       </div>
 
-      {/* Floating Button */}
-      <button
-        onClick={() => setShowModal(true)}
-        className="fixed bottom-6 left-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white text-3xl rounded-full shadow-xl flex items-center justify-center"
-        title="Add Activity"
-      >
-        +
-      </button>
+      
     </main>
   );
 }
