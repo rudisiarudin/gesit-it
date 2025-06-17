@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import ActivityForm, { FormData } from './ActivityForm';
 import ExportButtons from './ExportButtons';
@@ -9,11 +10,13 @@ import ActivityFilter from './ActivityFilter';
 import { Activity } from '@/types/activity';
 
 export default function ActivityLogPage() {
+  const router = useRouter();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [dateFilter, setDateFilter] = useState({ from: '', to: '' });
   const [loading, setLoading] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false); // 🛡️ Tambahan auth
 
   const initialFormData: FormData = {
     activity_name: '',
@@ -27,6 +30,20 @@ export default function ActivityLogPage() {
   };
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
+
+  // ✅ Cek session saat mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+      } else {
+        setSessionChecked(true);
+        fetchActivities();
+      }
+    };
+    checkSession();
+  }, []);
 
   const fetchActivities = async () => {
     let query = supabase
@@ -48,7 +65,9 @@ export default function ActivityLogPage() {
   };
 
   useEffect(() => {
-    fetchActivities();
+    if (sessionChecked) {
+      fetchActivities();
+    }
   }, [dateFilter]);
 
   const calculateDuration = (created: string, updated: string) => {
@@ -64,50 +83,49 @@ export default function ActivityLogPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    const now = new Date().toISOString();
-    const isCompleted = formData.status === 'Completed';
+    try {
+      const now = new Date().toISOString();
+      const isCompleted = formData.status === 'Completed';
 
-    const updated_at = now;
-    const created_at = editingActivity?.created_at || now;
-    let duration;
+      const updated_at = now;
+      const created_at = editingActivity?.created_at || now;
+      let duration;
 
-    if (isCompleted) {
-      duration = calculateDuration(created_at, updated_at);
+      if (isCompleted) {
+        duration = calculateDuration(created_at, updated_at);
+      }
+
+      const {
+        created_at: _omitCreatedAt,
+        ...payloadForm
+      } = formData;
+
+      const payload = {
+        ...payloadForm,
+        updated_at,
+        ...(duration ? { duration } : {}),
+      };
+
+      if (editingActivity) {
+        await supabase.from('activities').update(payload).eq('id', editingActivity.id);
+      } else {
+        await supabase.from('activities').insert({
+          ...payload,
+          created_at,
+        });
+      }
+
+      fetchActivities();
+      setShowForm(false);
+      setEditingActivity(null);
+      setFormData(initialFormData);
+    } finally {
+      setLoading(false);
     }
-
-    const {
-      created_at: _omitCreatedAt, // ✅ agar tidak ikut masuk ke payload update
-      ...payloadForm
-    } = formData;
-
-    const payload = {
-      ...payloadForm,
-      updated_at,
-      ...(duration ? { duration } : {}),
-    };
-
-    if (editingActivity) {
-      await supabase.from('activities').update(payload).eq('id', editingActivity.id);
-    } else {
-      await supabase.from('activities').insert({
-        ...payload,
-        created_at, // ✅ hanya saat insert
-      });
-    }
-
-    fetchActivities();
-    setShowForm(false);
-    setEditingActivity(null);
-    setFormData(initialFormData);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleEdit = (activity: Activity) => {
     setEditingActivity(activity);
@@ -130,6 +148,15 @@ export default function ActivityLogPage() {
     await supabase.from('activities').delete().eq('id', id);
     fetchActivities();
   };
+
+  // 🛡️ Tampilkan loader saat session dicek
+  if (!sessionChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Mengecek sesi login...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6">

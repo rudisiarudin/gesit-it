@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import {
   Home,
   List,
@@ -14,13 +14,49 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [userName, setUserName] = useState("User");
+  const [userInitials, setUserInitials] = useState("U");
+
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    const getUserInfo = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          const fullName =
+            data.user.user_metadata?.full_name ||
+            data.user.user_metadata?.name ||
+            "User";
+          setUserName(fullName);
+
+          const initials = fullName
+            .split(" ")
+            .map((word: string) => word[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+          setUserInitials(initials);
+        }
+      } catch (error) {
+        console.error("Failed to get user info:", error);
+      }
+    };
+
+    getUserInfo();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +111,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
       </aside>
 
-      {/* Overlay on mobile */}
+      {/* Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-30 md:hidden"
@@ -83,9 +119,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         />
       )}
 
-      {/* Main Section */}
+      {/* Content */}
       <div className="flex-1 flex flex-col min-h-screen pl-0 md:pl-64">
-        {/* Topbar */}
         <header className="h-16 bg-white border-b px-4 md:px-6 flex items-center justify-between shadow-sm gap-4">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -95,7 +130,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu size={22} />
           </button>
 
-          {/* Search form */}
           <form onSubmit={handleSearch} className="flex-1 max-w-md">
             <input
               type="text"
@@ -106,15 +140,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             />
           </form>
 
-          {/* User Menu */}
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100"
             >
               <div className="w-9 h-9 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-semibold">
-                CU
+                {userInitials}
               </div>
+              <span className="hidden md:block text-sm font-medium text-gray-800">{userName}</span>
             </button>
             {userMenuOpen && (
               <div className="absolute right-0 mt-2 w-44 bg-white border rounded-md shadow-lg z-50">
@@ -126,10 +160,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <User size={16} className="mr-2" /> Profile
                 </Link>
                 <button
-                  onClick={() => {
-                    alert("Logout clicked"); // Replace with Supabase logout
-                    setUserMenuOpen(false);
-                  }}
+                  onClick={handleLogout}
                   className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 text-left"
                 >
                   <LogOut size={16} className="mr-2" /> Logout
@@ -139,7 +170,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           {children}
         </main>
