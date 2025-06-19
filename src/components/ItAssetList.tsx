@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog } from '@headlessui/react';
 import { PlusCircle, Trash2, Pencil } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { QRCodeCanvas } from 'qrcode.react';
+
 
 interface Asset {
   id: string;
@@ -27,9 +27,11 @@ interface Asset {
 
 export default function ItAssetList() {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [form, setForm] = useState<Omit<Asset, 'qr_value'>>({
     id: '',
@@ -49,39 +51,37 @@ export default function ItAssetList() {
   });
 
   const router = useRouter();
-  const [userId, setUserId] = useState<string | null>(null);
 
   const generateId = async (category: string) => {
-  const now = new Date();
-  const dd = String(now.getDate()).padStart(2, '0');
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const yy = String(now.getFullYear()).slice(2);
-  const prefix = 'IT';
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yy = String(now.getFullYear()).slice(2);
+    const prefix = 'IT';
 
-  const catCode =
-    category.toLowerCase().includes('laptop') ? 'LP' :
-    category.toLowerCase().includes('pc') ? 'PC' :
-    category.toLowerCase().includes('printer') ? 'PR' :
-    category.toLowerCase().includes('monitor') ? 'MN' :
-    category.toLowerCase().includes('proyektor') ? 'PJ' :
-    category.toLowerCase().includes('router') ? 'RT' :
-    category.toLowerCase().includes('harddisk') ? 'HD' :
-    category.toLowerCase().includes('switch') ? 'SW' :
-    category.toLowerCase().includes('access') ? 'AP' :
-    category.toLowerCase().includes('peripherals') ? 'PH' :
-    category.toLowerCase().includes('security') ? 'SC' :
-    category.toLowerCase().includes('tools') ? 'TL' :
-    'OT';
+    const catCode =
+      category.toLowerCase().includes('laptop') ? 'LP' :
+      category.toLowerCase().includes('pc') ? 'PC' :
+      category.toLowerCase().includes('printer') ? 'PR' :
+      category.toLowerCase().includes('monitor') ? 'MN' :
+      category.toLowerCase().includes('proyektor') ? 'PJ' :
+      category.toLowerCase().includes('router') ? 'RT' :
+      category.toLowerCase().includes('harddisk') ? 'HD' :
+      category.toLowerCase().includes('switch') ? 'SW' :
+      category.toLowerCase().includes('access') ? 'AP' :
+      category.toLowerCase().includes('peripherals') ? 'PH' :
+      category.toLowerCase().includes('security') ? 'SC' :
+      category.toLowerCase().includes('tools') ? 'TL' :
+      'OT';
 
-  const { count } = await supabase
-    .from('it_assets')
-    .select('*', { count: 'exact', head: true })
-    .eq('category', category);
+    const { count } = await supabase
+      .from('it_assets')
+      .select('*', { count: 'exact', head: true })
+      .eq('category', category);
 
-  const serial = String((count || 0) + 1).padStart(3, '0');
-  return `${prefix}-${dd}${mm}${yy}-${catCode}-${serial}`;
-};
-
+    const serial = String((count || 0) + 1).padStart(3, '0');
+    return `${prefix}-${dd}${mm}${yy}-${catCode}-${serial}`;
+  };
 
   useEffect(() => {
     const checkSession = async () => {
@@ -116,8 +116,6 @@ export default function ItAssetList() {
     const isFormValid = requiredKeys.every((key) => String((form as any)[key]).trim() !== '');
 
     if (!isFormValid) return alert('Please fill all required fields.');
-
-    const isLaptopOrPC = ['laptop', 'pc'].includes(form.category.toLowerCase());
 
     if (isEditing && editId) {
       const qrValue = `${location.origin}/asset?id=${editId}`;
@@ -207,13 +205,23 @@ export default function ItAssetList() {
         </button>
       </div>
 
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search by item name, brand, or serial number..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="border px-4 py-2 rounded w-full md:w-1/3"
+        />
+      </div>
+
       <div className="overflow-auto">
         <table className="w-full bg-white shadow rounded text-sm">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-2">No</th>
               <th className="p-2">Item</th>
-              <th className="p-2">QR</th>
+              <th className="p-2">Asset ID</th>
               <th className="p-2">Category</th>
               <th className="p-2">Brand</th>
               <th className="p-2">S/N</th>
@@ -225,52 +233,92 @@ export default function ItAssetList() {
             </tr>
           </thead>
           <tbody>
-            {assets.map((asset, idx) => (
-              <tr key={asset.id} className="border-t">
-                <td className="p-2">{idx + 1}</td>
-                <td className="p-2">{asset.item_name}</td>
-                <td className="p-2">
-                  {asset.qr_value && (
-                    <div className="flex flex-col items-center">
-                      <QRCodeCanvas id={`qr-${asset.id}`} value={asset.qr_value} size={64} />
-                      <button
-                        className="text-xs text-blue-600 underline mt-1"
-                        onClick={() => {
-                          const canvas = document.getElementById(`qr-${asset.id}`) as HTMLCanvasElement;
-                          const url = canvas.toDataURL("image/png");
-                          const link = document.createElement("a");
-                          link.href = url;
-                          link.download = `QR-${asset.item_name}.png`;
-                          link.click();
-                        }}
-                      >
-                        Download
-                      </button>
-                    </div>
-                  )}
-                </td>
-                <td className="p-2">{asset.category}</td>
-                <td className="p-2">{asset.brand}</td>
-                <td className="p-2">{asset.serial_number}</td>
-                <td className="p-2">{asset.status}</td>
-                <td className="p-2">{asset.location}</td>
-                <td className="p-2">{asset.user_assigned}</td>
-                <td className="p-2">{asset.remarks}</td>
-                <td className="p-2 flex gap-2">
-                  <button onClick={() => handleEdit(asset)} className="text-blue-600 hover:underline">
-                    <Pencil size={16} />
-                  </button>
-                  <button onClick={() => handleDelete(asset.id)} className="text-red-600 hover:underline">
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {assets
+              .filter((asset) => {
+                const term = searchTerm.toLowerCase();
+                return (
+                  asset.item_name.toLowerCase().includes(term) ||
+                  asset.brand.toLowerCase().includes(term) ||
+                  asset.serial_number.toLowerCase().includes(term)
+                );
+              })
+              .map((asset, idx) => (
+                <tr key={asset.id} className="border-t">
+                  <td className="p-2">{idx + 1}</td>
+                  <td className="p-2">{asset.item_name}</td>
+                  <td className="p-2">{asset.id}</td>
+                  <td className="p-2">{asset.category}</td>
+                  <td className="p-2">{asset.brand}</td>
+                  <td className="p-2">{asset.serial_number}</td>
+                  <td className="p-2">{asset.status}</td>
+                  <td className="p-2">{asset.location}</td>
+                  <td className="p-2">{asset.user_assigned}</td>
+                  <td className="p-2">{asset.remarks}</td>
+                  <td className="p-2 flex gap-2 items-center">
+  <button
+    onClick={() => handleEdit(asset)}
+    className="text-blue-600 hover:text-blue-800"
+    title="Edit"
+  >
+    <Pencil size={16} />
+  </button>
+
+  <button
+    onClick={() => handleDelete(asset.id)}
+    className="text-red-600 hover:text-red-800"
+    title="Delete"
+  >
+    <Trash2 size={16} />
+  </button>
+
+  <button
+    onClick={() => {
+      const sourceCanvas = document.getElementById(`qr-${asset.id}`) as HTMLCanvasElement;
+      if (!sourceCanvas) return alert('QR Code not found');
+
+      const qrSize = 1024;
+      const canvas = document.createElement('canvas');
+      canvas.width = qrSize;
+      canvas.height = qrSize + 120;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(sourceCanvas, 0, 0, qrSize, qrSize);
+
+      ctx.font = 'bold 40px Arial';
+      ctx.fillStyle = 'black';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Gesit Asset - ${asset.item_name}`, canvas.width / 2, qrSize + 60);
+
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `QR-GesitAsset-${asset.item_name}.png`;
+      link.click();
+    }}
+    className="text-green-600 hover:text-green-800"
+    title="Download QR"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+    </svg>
+  </button>
+</td>
+
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
 
-      {/* Dialog */}
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -351,4 +399,3 @@ export default function ItAssetList() {
     </div>
   );
 }
- 
