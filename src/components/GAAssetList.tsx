@@ -48,10 +48,7 @@ export default function GAAssetList() {
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yy = String(now.getFullYear()).slice(2);
     const prefix = 'GA';
-    const catCode = category
-      .split(' ')[0]
-      .toUpperCase()
-      .slice(0, 2);
+    const catCode = category.split(' ')[0].toUpperCase().slice(0, 2);
 
     const { count } = await supabase
       .from('ga_assets')
@@ -73,7 +70,6 @@ export default function GAAssetList() {
         fetchAssets(uid);
       }
     };
-
     checkSession();
   }, []);
 
@@ -119,16 +115,8 @@ export default function GAAssetList() {
     setIsEditing(false);
     setEditId(null);
     setForm({
-      id: '',
-      item_name: '',
-      category: '',
-      brand: '',
-      serial_number: '',
-      status: '',
-      location: '',
-      user_assigned: '',
-      remarks: '',
-      user_id: '',
+      id: '', item_name: '', category: '', brand: '', serial_number: '',
+      status: '', location: '', user_assigned: '', remarks: '', user_id: '',
     });
     fetchAssets(userId);
   };
@@ -154,16 +142,8 @@ export default function GAAssetList() {
           onClick={() => {
             setIsEditing(false);
             setForm({
-              id: '',
-              item_name: '',
-              category: '',
-              brand: '',
-              serial_number: '',
-              status: '',
-              location: '',
-              user_assigned: '',
-              remarks: '',
-              user_id: '',
+              id: '', item_name: '', category: '', brand: '', serial_number: '',
+              status: '', location: '', user_assigned: '', remarks: '', user_id: '',
             });
             setIsOpen(true);
           }}
@@ -192,8 +172,8 @@ export default function GAAssetList() {
               <tr key={a.id} className="border-t">
                 <td className="p-2">{i + 1}</td>
                 <td className="p-2">{a.item_name}</td>
-                <td className="p-2">
-                  <QRCodeCanvas id={`qr-${a.id}`} value={a.qr_value} size={512} />
+                <td className="p-2 flex flex-col items-center gap-1">
+                  <QRCodeCanvas id={`qr-${a.id}`} value={a.qr_value} size={128} />
                   <button
                     onClick={() => {
                       const canvas = document.getElementById(`qr-${a.id}`) as HTMLCanvasElement;
@@ -203,9 +183,12 @@ export default function GAAssetList() {
                       link.download = `QR-${a.item_name}.png`;
                       link.click();
                     }}
-                    className="text-xs text-blue-600 underline mt-1 block"
+                    className="text-green-600 hover:text-green-800"
+                    title="Download QR"
                   >
-                    Download
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                    </svg>
                   </button>
                 </td>
                 <td className="p-2">{a.category}</td>
@@ -213,10 +196,10 @@ export default function GAAssetList() {
                 <td className="p-2">{a.location}</td>
                 <td className="p-2">{a.user_assigned}</td>
                 <td className="p-2 flex gap-2">
-                  <button onClick={() => handleEdit(a)} className="text-blue-600 hover:underline">
+                  <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800" title="Edit">
                     <Pencil size={16} />
                   </button>
-                  <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:underline">
+                  <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800" title="Delete">
                     <Trash2 size={16} />
                   </button>
                 </td>
@@ -226,7 +209,6 @@ export default function GAAssetList() {
         </table>
       </div>
 
-      {/* Dialog */}
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -236,25 +218,16 @@ export default function GAAssetList() {
             </Dialog.Title>
 
             <div className="grid grid-cols-2 gap-4">
-              {[
-                { key: 'item_name', label: 'Item Name' },
-                { key: 'brand', label: 'Brand' },
-                { key: 'serial_number', label: 'Serial Number' },
-                { key: 'status', label: 'Status' },
-                { key: 'location', label: 'Location' },
-                { key: 'user_assigned', label: 'User Assigned' },
-                { key: 'remarks', label: 'Remarks' },
-              ].map(({ key, label }) => (
+              {["item_name", "brand", "serial_number", "status", "location", "user_assigned", "remarks"].map((key) => (
                 <input
                   key={key}
                   type="text"
-                  placeholder={label}
+                  placeholder={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   value={(form as any)[key]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   className="w-full border p-2 rounded"
                 />
               ))}
-
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
