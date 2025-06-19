@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Dialog } from '@headlessui/react';
-import { PlusCircle, Trash2, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, Pencil, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useRouter } from 'next/navigation';
@@ -27,6 +27,7 @@ export default function GAAssetList() {
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
 
   const [form, setForm] = useState<Omit<GAAsset, 'qr_value'>>({
@@ -70,6 +71,7 @@ export default function GAAssetList() {
         fetchAssets(uid);
       }
     };
+
     checkSession();
   }, []);
 
@@ -115,8 +117,16 @@ export default function GAAssetList() {
     setIsEditing(false);
     setEditId(null);
     setForm({
-      id: '', item_name: '', category: '', brand: '', serial_number: '',
-      status: '', location: '', user_assigned: '', remarks: '', user_id: '',
+      id: '',
+      item_name: '',
+      category: '',
+      brand: '',
+      serial_number: '',
+      status: '',
+      location: '',
+      user_assigned: '',
+      remarks: '',
+      user_id: '',
     });
     fetchAssets(userId);
   };
@@ -142,8 +152,16 @@ export default function GAAssetList() {
           onClick={() => {
             setIsEditing(false);
             setForm({
-              id: '', item_name: '', category: '', brand: '', serial_number: '',
-              status: '', location: '', user_assigned: '', remarks: '', user_id: '',
+              id: '',
+              item_name: '',
+              category: '',
+              brand: '',
+              serial_number: '',
+              status: '',
+              location: '',
+              user_assigned: '',
+              remarks: '',
+              user_id: '',
             });
             setIsOpen(true);
           }}
@@ -153,13 +171,23 @@ export default function GAAssetList() {
         </button>
       </div>
 
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search item, category, location..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="border px-4 py-2 rounded w-full md:w-1/3"
+        />
+      </div>
+
       <div className="overflow-auto">
         <table className="w-full bg-white shadow rounded text-sm">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-2">No</th>
               <th className="p-2">Item</th>
-              <th className="p-2">QR</th>
+              <th className="p-2">Asset ID</th>
               <th className="p-2">Category</th>
               <th className="p-2">Status</th>
               <th className="p-2">Location</th>
@@ -168,47 +196,68 @@ export default function GAAssetList() {
             </tr>
           </thead>
           <tbody>
-            {assets.map((a, i) => (
-              <tr key={a.id} className="border-t">
-                <td className="p-2">{i + 1}</td>
-                <td className="p-2">{a.item_name}</td>
-                <td className="p-2 flex flex-col items-center gap-1">
-                  <QRCodeCanvas id={`qr-${a.id}`} value={a.qr_value} size={128} />
-                  <button
-                    onClick={() => {
-                      const canvas = document.getElementById(`qr-${a.id}`) as HTMLCanvasElement;
-                      const url = canvas.toDataURL();
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.download = `QR-${a.item_name}.png`;
-                      link.click();
-                    }}
-                    className="text-green-600 hover:text-green-800"
-                    title="Download QR"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                    </svg>
-                  </button>
-                </td>
-                <td className="p-2">{a.category}</td>
-                <td className="p-2">{a.status}</td>
-                <td className="p-2">{a.location}</td>
-                <td className="p-2">{a.user_assigned}</td>
-                <td className="p-2 flex gap-2">
-                  <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800" title="Edit">
-                    <Pencil size={16} />
-                  </button>
-                  <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800" title="Delete">
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {assets
+              .filter((a) =>
+                [a.item_name, a.category, a.location].some(field =>
+                  field.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+              )
+              .map((a, i) => (
+                <tr key={a.id} className="border-t">
+                  <td className="p-2">{i + 1}</td>
+                  <td className="p-2">{a.item_name}</td>
+                  <td className="p-2">{a.id}</td>
+                  <td className="p-2">{a.category}</td>
+                  <td className="p-2">{a.status}</td>
+                  <td className="p-2">{a.location}</td>
+                  <td className="p-2">{a.user_assigned}</td>
+                  <td className="p-2 flex gap-2 items-center">
+                    <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800">
+                      <Trash2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const canvas = document.createElement('canvas');
+                        const qrCanvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const size = 1024;
+                        canvas.width = size;
+                        canvas.height = size + 100;
+
+                        if (!ctx) return;
+
+                        const text = `GA - ${a.item_name}`;
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        QRCodeCanvas.render({ value: a.qr_value, size }, qrCanvas);
+                        ctx.drawImage(qrCanvas, 0, 0);
+
+                        ctx.fillStyle = 'black';
+                        ctx.textAlign = 'center';
+                        ctx.font = 'bold 40px Arial';
+                        ctx.fillText(text, canvas.width / 2, size + 60);
+
+                        const link = document.createElement('a');
+                        link.href = canvas.toDataURL('image/png');
+                        link.download = `QR-${a.item_name}.png`;
+                        link.click();
+                      }}
+                      className="text-green-600 hover:text-green-800"
+                    >
+                      <Download size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
 
+      {/* Dialog form tetap sama */}
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -218,16 +267,18 @@ export default function GAAssetList() {
             </Dialog.Title>
 
             <div className="grid grid-cols-2 gap-4">
-              {["item_name", "brand", "serial_number", "status", "location", "user_assigned", "remarks"].map((key) => (
-                <input
-                  key={key}
-                  type="text"
-                  placeholder={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  value={(form as any)[key]}
-                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  className="w-full border p-2 rounded"
-                />
-              ))}
+              {[{ key: 'item_name', label: 'Item Name' }, { key: 'brand', label: 'Brand' }, { key: 'serial_number', label: 'Serial Number' }, { key: 'status', label: 'Status' }, { key: 'location', label: 'Location' }, { key: 'user_assigned', label: 'User Assigned' }, { key: 'remarks', label: 'Remarks' }]
+                .map(({ key, label }) => (
+                  <input
+                    key={key}
+                    type="text"
+                    placeholder={label}
+                    value={(form as any)[key]}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    className="w-full border p-2 rounded"
+                  />
+                ))}
+
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
