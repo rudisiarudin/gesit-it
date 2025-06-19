@@ -220,36 +220,23 @@ export default function GAAssetList() {
                     </button>
                     <button
                       onClick={() => {
-                        const canvas = document.createElement('canvas');
-                        const qrCanvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const size = 1024;
-                        canvas.width = size;
-                        canvas.height = size + 100;
-
-                        if (!ctx) return;
-
-                        const text = `GA - ${a.item_name}`;
-                        ctx.fillStyle = 'white';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                        QRCodeCanvas.render({ value: a.qr_value, size }, qrCanvas);
-                        ctx.drawImage(qrCanvas, 0, 0);
-
-                        ctx.fillStyle = 'black';
-                        ctx.textAlign = 'center';
-                        ctx.font = 'bold 40px Arial';
-                        ctx.fillText(text, canvas.width / 2, size + 60);
-
+                        const hiddenCanvasId = `qr-download-${a.id}`;
+                        const hiddenCanvas = document.getElementById(hiddenCanvasId) as HTMLCanvasElement;
+                        if (!hiddenCanvas) return;
+                        const url = hiddenCanvas.toDataURL();
                         const link = document.createElement('a');
-                        link.href = canvas.toDataURL('image/png');
+                        link.href = url;
                         link.download = `QR-${a.item_name}.png`;
                         link.click();
                       }}
                       className="text-green-600 hover:text-green-800"
                     >
                       <Download size={16} />
+                      <div className="hidden">
+                        <QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} />
+                      </div>
                     </button>
+
                   </td>
                 </tr>
               ))}
