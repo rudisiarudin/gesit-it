@@ -193,7 +193,7 @@ export default function GAAssetList() {
                 <td className="p-2">{i + 1}</td>
                 <td className="p-2">{a.item_name}</td>
                 <td className="p-2">
-                  <QRCodeCanvas id={`qr-${a.id}`} value={a.qr_value} size={64} />
+                  <QRCodeCanvas id={`qr-${a.id}`} value={a.qr_value} size={512} />
                   <button
                     onClick={() => {
                       const canvas = document.getElementById(`qr-${a.id}`) as HTMLCanvasElement;
