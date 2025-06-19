@@ -232,8 +232,11 @@ export default function Page() {
   };
 
   return (
-    <main className="space-y-6">
-      <h1 className="text-2xl font-bold">IT Activity Log</h1>
+    <div className="space-y-6">
+       <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">IT Activity Log</h1>
+      </div>
+     
     <div className="grid gap-3 md:flex md:flex-wrap justify-between items-center mb-4"></div>
       <div className="flex flex-wrap gap-2 md:gap-4">
         <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="input max-w-[160px]" />
@@ -403,6 +406,6 @@ export default function Page() {
         </table>
       </div>
 
-    </main>
+    </div>
   );
 }

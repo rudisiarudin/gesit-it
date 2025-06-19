@@ -8,11 +8,14 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
+
+
+
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [userName, setUserName] = useState("User");
   const [userInitials, setUserInitials] = useState("U");
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -54,13 +57,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     router.push("/login");
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      router.push(`/dashboard/activity-log?search=${encodeURIComponent(searchTerm)}`);
-    }
-  };
-
   const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: <Home size={18} /> },
     { href: "/dashboard/activity-log", label: "Activity IT", icon: <List size={18} /> },
@@ -70,7 +66,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { href: "/dashboard/ga-assets", label: "GA Asset", icon: <Package size={18} /> },
   ];
 
-  // Tambahkan menu user hanya jika role admin
   if (userRole === "admin") {
     menuItems.push({
       href: "/dashboard/users",
@@ -89,7 +84,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         )}
       >
         <div className="flex items-center justify-between px-6 h-16 border-b">
-          <span className="text-xl font-semibold text-slate-800">Log IT</span>
+         <div className="flex items-center gap-2">
+          <Image src="/logo.png" alt="Logo" width={32} height={32} />
+          <span className="text-lg font-bold text-slate-800">IT Gesit</span>
+        </div>
+
           <button
             className="md:hidden text-gray-600"
             onClick={() => setSidebarOpen(false)}
@@ -128,7 +127,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Content */}
       <div className="flex-1 flex flex-col min-h-screen pl-0 md:pl-64">
-        <header className="h-16 bg-white border-b px-4 md:px-6 flex items-center justify-between shadow-sm gap-4">
+        <header className="h-16 bg-white border-b px-4 md:px-6 flex items-center justify-between shadow-sm">
           <button
             onClick={() => setSidebarOpen(true)}
             className="md:hidden text-gray-700"
@@ -137,17 +136,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu size={22} />
           </button>
 
-          <form onSubmit={handleSearch} className="flex-1 max-w-md">
-            <input
-              type="text"
-              placeholder="Cari aktivitas..."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </form>
-
-          <div className="relative">
+          <div className="relative ml-auto">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100"
