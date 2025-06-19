@@ -1,218 +1,233 @@
 'use client';
 
-import { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Dialog } from '@headlessui/react';
+import { PlusCircle, Trash2, Pencil } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
-type Row = {
-  id: string;
-  itemName: string;
+interface PurchasePlan {
+  id: number;
+  item_name: string;
   qty: number;
-  uom: string;
-  estPrice: number;
-  remarks: string;
+  unit: string;
+  needed_by: string;
   status: string;
-};
+  remarks: string;
+  estimated_price: number;
+  user_id?: string;
+}
 
-export default function PurchasePlan() {
-  const [rows, setRows] = useState<Row[]>([
-    {
-      id: uuidv4(),
-      itemName: '',
-      qty: 1,
-      uom: '',
-      estPrice: 0,
-      remarks: '',
-      status: '',
-    },
-  ]);
+export default function PurchasePlanPage() {
+  const [plans, setPlans] = useState<PurchasePlan[]>([]);
+  const [form, setForm] = useState<Omit<PurchasePlan, 'id'>>({
+    item_name: '',
+    qty: 1,
+    unit: '',
+    needed_by: '',
+    status: '',
+    remarks: '',
+    estimated_price: 0,
+  });
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const router = useRouter();
 
-  const addRow = () => {
-    setRows((prev) => [
-      ...prev,
-      {
-        id: uuidv4(),
-        itemName: '',
-        qty: 1,
-        uom: '',
-        estPrice: 0,
-        remarks: '',
-        status: '',
-      },
-    ]);
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+      } else {
+        setUserId(session.user.id);
+        fetchPlans(session.user.id);
+      }
+    };
+    checkSession();
+  }, []);
+
+  const fetchPlans = async (uid: string) => {
+    const { data, error } = await supabase
+      .from('purchase_plans')
+      .select('*')
+      .eq('user_id', uid)
+      .order('id', { ascending: true });
+
+    if (!error && data) setPlans(data);
   };
 
-  const removeRow = (id: string) => {
-    setRows((prev) => prev.filter((row) => row.id !== id));
-  };
+  const handleSubmit = async () => {
+    if (!userId) return;
 
-  const handleChange = (id: string, key: keyof Row, value: string) => {
-    setRows((prev) =>
-      prev.map((row) =>
-        row.id === id
-          ? { ...row, [key]: key === 'qty' || key === 'estPrice' ? Number(value) : value }
-          : row
-      )
-    );
-  };
+    const payload = {
+      ...form,
+      qty: Number(form.qty),
+      estimated_price: Number(form.estimated_price),
+      user_id: userId,
+    };
 
-  const formatIDR = (value: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const total = rows.reduce((sum, row) => sum + row.qty * row.estPrice, 0);
-
-  const saveToSupabase = async () => {
-    const planId = uuidv4();
-
-    const { error: planError } = await supabase.from('purchase_plans').insert({
-      id: planId,
-      plan_name: 'Plan ' + new Date().toLocaleDateString(),
-      created_by: 'admin',
-    });
-
-    if (planError) {
-      alert('Gagal simpan rencana: ' + planError.message);
-      return;
-    }
-
-    const items = rows.map((row) => ({
-      id: uuidv4(),
-      plan_id: planId,
-      item_name: row.itemName,
-      qty: row.qty,
-      uom: row.uom,
-      est_price: row.estPrice,
-      remarks: row.remarks,
-      status: row.status,
-    }));
-
-    const { error: itemError } = await supabase.from('purchase_plan_items').insert(items);
-
-    if (itemError) {
-      alert('Gagal simpan item: ' + itemError.message);
+    if (editId !== null) {
+      await supabase.from('purchase_plans').update(payload).eq('id', editId);
     } else {
-      alert('Berhasil disimpan!');
-      setRows([
-        {
-          id: uuidv4(),
-          itemName: '',
-          qty: 1,
-          uom: '',
-          estPrice: 0,
-          remarks: '',
-          status: '',
-        },
-      ]);
+      await supabase.from('purchase_plans').insert([payload]);
     }
+
+    setForm({ item_name: '', qty: 1, unit: '', needed_by: '', status: '', remarks: '', estimated_price: 0 });
+    setIsOpen(false);
+    setEditId(null);
+    fetchPlans(userId);
   };
+
+  const handleDelete = async (id: number) => {
+    await supabase.from('purchase_plans').delete().eq('id', id);
+    if (userId) fetchPlans(userId);
+  };
+
+  const handleEdit = (plan: PurchasePlan) => {
+    setForm({
+      item_name: plan.item_name,
+      qty: plan.qty,
+      unit: plan.unit,
+      needed_by: plan.needed_by,
+      status: plan.status,
+      remarks: plan.remarks,
+      estimated_price: plan.estimated_price,
+    });
+    setEditId(plan.id);
+    setIsOpen(true);
+  };
+
+  const formatCurrency = (value: number) =>
+    'Rp ' + value.toLocaleString('id-ID');
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Purchase Plan</h2>
-      <table className="w-full table-auto border border-gray-300">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Purchase Plan</h1>
+        <button
+          onClick={() => {
+            setIsOpen(true);
+            setEditId(null);
+            setForm({ item_name: '', qty: 1, unit: '', needed_by: '', status: '', remarks: '', estimated_price: 0 });
+          }}
+          className="flex items-center bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          <PlusCircle className="mr-2" size={18} /> Add Purchase
+        </button>
+      </div>
+
+      <table className="w-full bg-white shadow rounded">
         <thead className="bg-gray-100">
           <tr>
-            <th className="border px-2 py-1">No</th>
-            <th className="border px-2 py-1">Item Name</th>
-            <th className="border px-2 py-1">Qty</th>
-            <th className="border px-2 py-1">UoM</th>
-            <th className="border px-2 py-1">Est. Price</th>
-            <th className="border px-2 py-1">Subtotal</th>
-            <th className="border px-2 py-1">Remarks</th>
-            <th className="border px-2 py-1">Status</th>
-            <th className="border px-2 py-1">Action</th>
+            <th className="p-3 text-left">No</th>
+            <th className="p-3 text-left">Item</th>
+            <th className="p-3 text-left">Qty</th>
+            <th className="p-3 text-left">Satuan</th>
+            <th className="p-3 text-left">Needed By</th>
+            <th className="p-3 text-left">Est. Harga</th>
+            <th className="p-3 text-left">Total</th>
+            <th className="p-3 text-left">Status</th>
+            <th className="p-3 text-left">Remarks</th>
+            <th className="p-3 text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, idx) => (
-            <tr key={row.id}>
-              <td className="border px-2 py-1 text-center">{idx + 1}</td>
-              <td className="border px-2 py-1">
-                <input
-                  className="w-full border px-1"
-                  value={row.itemName}
-                  onChange={(e) => handleChange(row.id, 'itemName', e.target.value)}
-                />
-              </td>
-              <td className="border px-2 py-1">
-                <input
-                  type="number"
-                  className="w-full border px-1 text-right"
-                  value={row.qty}
-                  onChange={(e) => handleChange(row.id, 'qty', e.target.value)}
-                />
-              </td>
-              <td className="border px-2 py-1">
-                <input
-                  className="w-full border px-1"
-                  value={row.uom}
-                  onChange={(e) => handleChange(row.id, 'uom', e.target.value)}
-                />
-              </td>
-              <td className="border px-2 py-1 text-right">
-                <input
-                  type="number"
-                  className="w-full border px-1 text-right"
-                  value={row.estPrice}
-                  onChange={(e) => handleChange(row.id, 'estPrice', e.target.value)}
-                />
-              </td>
-              <td className="border px-2 py-1 text-right">
-                {formatIDR(row.qty * row.estPrice)}
-              </td>
-              <td className="border px-2 py-1">
-                <input
-                  className="w-full border px-1"
-                  value={row.remarks}
-                  onChange={(e) => handleChange(row.id, 'remarks', e.target.value)}
-                />
-              </td>
-              <td className="border px-2 py-1">
-                <input
-                  className="w-full border px-1"
-                  value={row.status}
-                  onChange={(e) => handleChange(row.id, 'status', e.target.value)}
-                />
-              </td>
-              <td className="border px-2 py-1 text-center">
-                <button
-                  className="text-red-500 hover:underline"
-                  onClick={() => removeRow(row.id)}
-                >
-                  Delete
+          {plans.map((plan, idx) => (
+            <tr key={plan.id} className="border-t">
+              <td className="p-3">{idx + 1}</td>
+              <td className="p-3">{plan.item_name}</td>
+              <td className="p-3">{plan.qty}</td>
+              <td className="p-3">{plan.unit}</td>
+              <td className="p-3">{plan.needed_by}</td>
+              <td className="p-3">{formatCurrency(plan.estimated_price)}</td>
+              <td className="p-3">{formatCurrency(plan.estimated_price * plan.qty)}</td>
+              <td className="p-3">{plan.status}</td>
+              <td className="p-3">{plan.remarks}</td>
+              <td className="p-3 flex gap-2">
+                <button onClick={() => handleEdit(plan)} className="text-blue-600 hover:underline">
+                  <Pencil size={16} />
+                </button>
+                <button onClick={() => handleDelete(plan.id)} className="text-red-600 hover:underline">
+                  <Trash2 size={16} />
                 </button>
               </td>
             </tr>
           ))}
-          <tr className="bg-gray-100 font-semibold">
-            <td colSpan={5} className="border px-2 py-2 text-right">
-              Total
-            </td>
-            <td className="border px-2 py-2 text-right">{formatIDR(total)}</td>
-            <td colSpan={3} className="border px-2 py-2"></td>
-          </tr>
         </tbody>
       </table>
 
-      <div className="flex gap-4 mt-4">
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={addRow}
-        >
-          Add Row
-        </button>
-        <button
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          onClick={saveToSupabase}
-        >
-          Save to Supabase
-        </button>
-      </div>
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="bg-white w-full max-w-md p-6 rounded shadow">
+            <Dialog.Title className="text-lg font-semibold mb-4">
+              {editId ? 'Edit' : 'Add'} Purchase Plan
+            </Dialog.Title>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Item Name"
+                value={form.item_name}
+                onChange={(e) => setForm({ ...form, item_name: e.target.value })}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="number"
+                placeholder="Qty"
+                value={form.qty}
+                onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Satuan"
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="date"
+                value={form.needed_by}
+                onChange={(e) => setForm({ ...form, needed_by: e.target.value })}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="number"
+                placeholder="Estimasi Harga"
+                value={form.estimated_price}
+                onChange={(e) => setForm({ ...form, estimated_price: Number(e.target.value) })}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Status"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Remarks"
+                value={form.remarks}
+                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                className="w-full border p-2 rounded"
+              />
+              <div className="flex justify-end gap-2 pt-4">
+                <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                >
+                  {editId ? 'Update' : 'Add'}
+                </button>
+              </div>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 }

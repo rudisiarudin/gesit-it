@@ -1,64 +1,125 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Dialog } from "@headlessui/react";
-import { PlusCircle } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Dialog } from '@headlessui/react';
+import { PlusCircle, Trash2, Pencil } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 interface Plan {
   id: number;
   title: string;
   week: string;
+  month: string;
+  year: string;
   status: string;
+  user_id?: string;
 }
 
-const initialData: Plan[] = [
-  {
-    id: 1,
-    title: "Replace SSD FA",
-    week: "Week 4 Jun",
-    status: "Lisi hold 26 Jun",
-  },
-  {
-    id: 2,
-    title: "Housekeeping Server DSM",
-    week: "Week 3 Jun",
-    status: "Disk 2 on process",
-  },
-  {
-    id: 3,
-    title: "Delete Email heri@aams.co.id 20/6/2025",
-    week: "Week 3 Jun",
-    status: "Cooldown time deletion",
-  },
-  {
-    id: 4,
-    title: "Creating Purchase Coax Cable, lakban hitam, Backup IP Cam + Sd card",
-    week: "Week 3 Jun",
-    status: "Creating Form",
-  },
-  {
-    id: 5,
-    title: "Creating comparison data Mikrotik",
-    week: "Week 3 Jun",
-    status: "Creating File",
-  },
-  {
-    id: 6,
-    title: "Comparison Teams Essentials for user (Pak Jacob and Pak Javier request)",
-    week: "Week 3 Jun",
-    status: "Creating File",
-  },
-];
-
 export default function WeeklyPlan() {
-  const [plans, setPlans] = useState<Plan[]>(initialData);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState<Omit<Plan, "id">>({ title: "", week: "", status: "" });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
 
-  const addPlan = () => {
-    setPlans((prev) => [...prev, { id: prev.length + 1, ...form }]);
-    setForm({ title: "", week: "", status: "" });
+  const [form, setForm] = useState<Omit<Plan, 'id'>>({
+    title: '',
+    week: '',
+    month: '',
+    year: '',
+    status: '',
+  });
+
+  const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+      } else {
+        const uid = session.user.id;
+        setUserId(uid);
+        fetchPlans(uid);
+      }
+    };
+
+    checkSession();
+  }, []);
+
+  const fetchPlans = async (uid: string) => {
+    const { data, error } = await supabase
+      .from('weekly_plans')
+      .select('*')
+      .eq('user_id', uid)
+      .order('id', { ascending: true });
+
+    if (!error && data) {
+      setPlans(data);
+    } else {
+      console.error('Error fetching plans:', error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!userId) return;
+
+    if (isEditing && editId !== null) {
+      // UPDATE
+      const { error } = await supabase
+        .from('weekly_plans')
+        .update({ ...form })
+        .eq('id', editId);
+
+      if (error) {
+        console.error('Error updating plan:', error);
+      }
+    } else {
+      // INSERT
+      const { error } = await supabase.from('weekly_plans').insert([
+        {
+          ...form,
+          user_id: userId,
+        },
+      ]);
+
+      if (error) {
+        console.error('Error adding plan:', error);
+      }
+    }
+
+    // Reset form
+    setForm({ title: '', week: '', month: '', year: '', status: '' });
     setIsOpen(false);
+    setIsEditing(false);
+    setEditId(null);
+    fetchPlans(userId);
+  };
+
+  const handleEdit = (plan: Plan) => {
+    setForm({
+      title: plan.title,
+      week: plan.week,
+      month: plan.month,
+      year: plan.year,
+      status: plan.status,
+    });
+    setEditId(plan.id);
+    setIsEditing(true);
+    setIsOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    const confirmed = confirm('Are you sure you want to delete this plan?');
+    if (!confirmed) return;
+
+    const { error } = await supabase.from('weekly_plans').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting plan:', error);
+    } else if (userId) {
+      fetchPlans(userId);
+    }
   };
 
   return (
@@ -66,7 +127,12 @@ export default function WeeklyPlan() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Weekly Plan</h1>
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setForm({ title: '', week: '', month: '', year: '', status: '' });
+            setIsEditing(false);
+            setEditId(null);
+            setIsOpen(true);
+          }}
           className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           <PlusCircle className="mr-2" size={18} /> Add Weekly Plan
@@ -79,7 +145,10 @@ export default function WeeklyPlan() {
             <th className="text-left p-3">No</th>
             <th className="text-left p-3">Title</th>
             <th className="text-left p-3">Week</th>
+            <th className="text-left p-3">Month</th>
+            <th className="text-left p-3">Year</th>
             <th className="text-left p-3">Status</th>
+            <th className="text-left p-3">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -88,19 +157,29 @@ export default function WeeklyPlan() {
               <td className="p-3">{idx + 1}</td>
               <td className="p-3">{plan.title}</td>
               <td className="p-3">{plan.week}</td>
+              <td className="p-3">{plan.month}</td>
+              <td className="p-3">{plan.year}</td>
               <td className="p-3">{plan.status}</td>
+              <td className="p-3 flex gap-2">
+                <button onClick={() => handleEdit(plan)} className="text-blue-600 hover:underline">
+                  <Pencil size={16} />
+                </button>
+                <button onClick={() => handleDelete(plan.id)} className="text-red-600 hover:underline">
+                  <Trash2 size={16} />
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* Modal */}
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="bg-white w-full max-w-md p-6 rounded shadow">
-            <Dialog.Title className="text-lg font-semibold mb-4">Add Weekly Plan</Dialog.Title>
-
+            <Dialog.Title className="text-lg font-semibold mb-4">
+              {isEditing ? 'Edit Weekly Plan' : 'Add Weekly Plan'}
+            </Dialog.Title>
             <div className="space-y-4">
               <input
                 type="text"
@@ -109,13 +188,35 @@ export default function WeeklyPlan() {
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 className="w-full border p-2 rounded"
               />
-              <input
-                type="text"
-                placeholder="Week"
+
+              <select
                 value={form.week}
                 onChange={(e) => setForm({ ...form, week: e.target.value })}
                 className="w-full border p-2 rounded"
+              >
+                <option value="">Select Week</option>
+                <option value="Week 1">Week 1</option>
+                <option value="Week 2">Week 2</option>
+                <option value="Week 3">Week 3</option>
+                <option value="Week 4">Week 4</option>
+              </select>
+
+              <input
+                type="text"
+                placeholder="Month (e.g. June)"
+                value={form.month}
+                onChange={(e) => setForm({ ...form, month: e.target.value })}
+                className="w-full border p-2 rounded"
               />
+
+              <input
+                type="text"
+                placeholder="Year (e.g. 2025)"
+                value={form.year}
+                onChange={(e) => setForm({ ...form, year: e.target.value })}
+                className="w-full border p-2 rounded"
+              />
+
               <input
                 type="text"
                 placeholder="Status"
@@ -123,13 +224,16 @@ export default function WeeklyPlan() {
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
                 className="w-full border p-2 rounded"
               />
+
               <div className="flex justify-end space-x-2">
-                <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm">Cancel</button>
+                <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm">
+                  Cancel
+                </button>
                 <button
-                  onClick={addPlan}
+                  onClick={handleSubmit}
                   className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
-                  Add
+                  {isEditing ? 'Update' : 'Add'}
                 </button>
               </div>
             </div>

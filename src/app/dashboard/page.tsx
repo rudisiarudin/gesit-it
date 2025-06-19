@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { Activity, CheckCircle, Loader2 } from "lucide-react";
+import {
+  Activity,
+  CheckCircle,
+  Loader2,
+  Monitor,
+  Package,
+} from "lucide-react";
 
 export default function Page() {
   const router = useRouter();
@@ -14,6 +20,9 @@ export default function Page() {
   const [total, setTotal] = useState(0);
   const [completed, setCompleted] = useState(0);
   const [inProgress, setInProgress] = useState(0);
+  const [totalITAssets, setTotalITAssets] = useState(0);
+  const [totalGAAssets, setTotalGAAssets] = useState(0);
+  const [todayActivities, setTodayActivities] = useState<any[]>([]);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -34,17 +43,25 @@ export default function Page() {
   }, []);
 
   const fetchDashboardStats = async () => {
-    const { data, error } = await supabase.from("activities").select("status");
+    const today = new Date().toISOString().split("T")[0];
 
-    if (!error && data) {
-      const totalActivities = data.length;
-      const completedActivities = data.filter((a) => a.status === "Completed").length;
-      const inProgressActivities = totalActivities - completedActivities;
+    const [{ data: actData }, { data: itAssets }, { data: gaAssets }] = await Promise.all([
+      supabase.from("activities").select("*").gte("created_at", `${today}T00:00:00`),
+      supabase.from("it_assets").select("id"),
+      supabase.from("ga_assets").select("id"),
+    ]);
 
+    if (actData) {
+      setTodayActivities(actData);
+      const totalActivities = actData.length;
+      const completedActivities = actData.filter((a) => a.status === "Completed").length;
       setTotal(totalActivities);
       setCompleted(completedActivities);
-      setInProgress(inProgressActivities);
+      setInProgress(totalActivities - completedActivities);
     }
+
+    setTotalITAssets(itAssets?.length || 0);
+    setTotalGAAssets(gaAssets?.length || 0);
 
     setLoading(false);
   };
@@ -95,6 +112,7 @@ export default function Page() {
           Selamat datang di sistem log IT <span className="font-semibold">Gesit</span>.
         </p>
 
+        {/* Aktivitas */}
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Card
             icon={Activity}
@@ -121,6 +139,45 @@ export default function Page() {
             iconColor="text-yellow-600"
           />
         </div>
+
+        {/* Aset */}
+        <h2 className="text-xl font-semibold text-gray-700 mt-10 mb-4">
+          Ringkasan Aset
+        </h2>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
+          <Card
+            icon={Monitor}
+            title="Aset IT"
+            value={totalITAssets}
+            bg="bg-purple-50"
+            textColor="text-purple-800"
+            iconColor="text-purple-600"
+          />
+          <Card
+            icon={Package}
+            title="Aset GA"
+            value={totalGAAssets}
+            bg="bg-indigo-50"
+            textColor="text-indigo-800"
+            iconColor="text-indigo-600"
+          />
+        </div>
+
+        {/* Notifikasi Hari Ini */}
+        {todayActivities.length > 0 && (
+          <>
+            <h2 className="text-xl font-semibold text-gray-700 mt-10 mb-4">
+              Aktivitas Hari Ini
+            </h2>
+            <ul className="divide-y divide-gray-200 bg-white rounded-xl border shadow-sm">
+              {todayActivities.map((a, i) => (
+                <li key={i} className="p-4 text-sm text-gray-700">
+                  <span className="font-semibold">{a.user || "User"}</span> - {a.activity}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
     </main>
   );

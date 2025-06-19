@@ -11,6 +11,8 @@ import {
   X,
   User,
   LogOut,
+  Cpu,
+  Package,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -65,12 +67,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   };
 
-  const menuItems = [
-    { href: "/dashboard", label: "Dashboard", icon: <Home size={18} /> },
-    { href: "/dashboard/activity-log", label: "Activity IT", icon: <List size={18} /> },
-    { href: "/dashboard/weekly-plan", label: "Weekly Plan", icon: <Calendar size={18} /> },
-    { href: "/dashboard/purchase-plan", label: "Purchase Plan", icon: <ShoppingCart size={18} /> },
-  ];
+ const menuItems = [
+  { href: "/dashboard", label: "Dashboard", icon: <Home size={18} /> },
+  { href: "/dashboard/activity-log", label: "Activity IT", icon: <List size={18} /> },
+  { href: "/dashboard/weekly-plan", label: "Weekly Plan", icon: <Calendar size={18} /> },
+  { href: "/dashboard/purchase-plan", label: "Purchase Plan", icon: <ShoppingCart size={18} /> },
+  { href: "/dashboard/it-assets", label: "IT Asset", icon: <Cpu size={18} /> },        // 🧠 Ganti icon
+  { href: "/dashboard/ga-assets", label: "GA Asset", icon: <Package size={18} /> },    // 📦 Ganti icon
+];
+
+
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex">
