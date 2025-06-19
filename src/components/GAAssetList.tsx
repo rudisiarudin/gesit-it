@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,6 +7,9 @@ import { PlusCircle, Trash2, Pencil, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useRouter } from 'next/navigation';
+import DownloadAllQRButton from '@/components/DownloadAllQRButton';
+import { usePagination } from '@/hooks/usePagination';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface GAAsset {
   id: string;
@@ -26,22 +30,13 @@ export default function GAAssetList() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const router = useRouter();
-
   const [form, setForm] = useState<Omit<GAAsset, 'qr_value'>>({
-    id: '',
-    item_name: '',
-    category: '',
-    brand: '',
-    serial_number: '',
-    status: '',
-    location: '',
-    user_assigned: '',
-    remarks: '',
-    user_id: '',
+    id: '', item_name: '', category: '', brand: '', serial_number: '', status: '', location: '', user_assigned: '', remarks: '', user_id: ''
   });
+
+  const router = useRouter();
+  const { role, userId } = useUserRole();
 
   const generateId = async (category: string) => {
     const now = new Date();
@@ -63,27 +58,20 @@ export default function GAAssetList() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/login');
-      } else {
-        const uid = session.user.id;
-        setUserId(uid);
-        fetchAssets(uid);
-      }
+      if (!session) router.replace('/login');
+      else fetchAssets();
     };
 
     checkSession();
   }, []);
 
-  const fetchAssets = async (uid: string) => {
+  const fetchAssets = async () => {
     const { data, error } = await supabase
       .from('ga_assets')
       .select('*')
-      .eq('user_id', uid)
       .order('id', { ascending: true });
 
     if (!error && data) setAssets(data);
-    else console.error('Fetch error:', error);
   };
 
   const handleSubmit = async () => {
@@ -91,26 +79,25 @@ export default function GAAssetList() {
 
     const required = ['item_name', 'category', 'status', 'location'];
     const isValid = required.every(key => (form as any)[key]?.trim() !== '');
-
     if (!isValid) return alert('Please fill all required fields.');
 
+    const qrValue = `${location.origin}/ga-asset?id=${isEditing ? editId : form.id}`;
+
     if (isEditing && editId) {
-      const qrValue = `${location.origin}/ga-asset?id=${editId}`;
       const { error } = await supabase
         .from('ga_assets')
         .update({ ...form, qr_value: qrValue })
         .eq('id', editId);
-      if (error) console.error('Update error:', error.message);
+      if (error) console.error('Update error:', error);
     } else {
       const newId = await generateId(form.category);
-      const qrValue = `${location.origin}/ga-asset?id=${newId}`;
       const { error } = await supabase.from('ga_assets').insert([{
         ...form,
         id: newId,
         qr_value: qrValue,
         user_id: userId
       }]);
-      if (error) console.error('Insert error:', error.message);
+      if (error) console.error('Insert error:', error);
     }
 
     setIsOpen(false);
@@ -128,10 +115,11 @@ export default function GAAssetList() {
       remarks: '',
       user_id: '',
     });
-    fetchAssets(userId);
+    fetchAssets();
   };
 
   const handleEdit = (asset: GAAsset) => {
+    if (role === 'user') return;
     setForm(asset);
     setEditId(asset.id);
     setIsEditing(true);
@@ -139,48 +127,56 @@ export default function GAAssetList() {
   };
 
   const handleDelete = async (id: string) => {
+    if (role !== 'admin') return;
     if (!confirm('Delete this asset?')) return;
     const { error } = await supabase.from('ga_assets').delete().eq('id', id);
-    if (!error && userId) fetchAssets(userId);
+    if (!error) fetchAssets();
   };
 
+  const filteredAssets = assets.filter((a) =>
+    [a.item_name, a.category, a.location].some(field =>
+      field.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
+  const { currentPage, totalPages, paginatedItems, nextPage, prevPage } = usePagination(filteredAssets.length, 10);
+  const displayedAssets = paginatedItems(filteredAssets);
   return (
     <div className="space-y-6">
+      {/* Header + Add Button */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">GA Asset List</h1>
-        <button
-          onClick={() => {
-            setIsEditing(false);
-            setForm({
-              id: '',
-              item_name: '',
-              category: '',
-              brand: '',
-              serial_number: '',
-              status: '',
-              location: '',
-              user_assigned: '',
-              remarks: '',
-              user_id: '',
-            });
-            setIsOpen(true);
-          }}
-          className="flex items-center bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          <PlusCircle className="mr-2" size={18} /> Add GA Asset
-        </button>
       </div>
 
-      <div className="mb-4">
+      {/* Search + Download All QR */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <input
           type="text"
-          placeholder="Search item, category, location..."
+          placeholder="Search item, brand, SN..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border px-4 py-2 rounded w-full md:w-1/3"
         />
+      
+        <div className="flex gap-2">
+          <DownloadAllQRButton assets={displayedAssets} />
+          {(role === 'admin' || role === 'staff') && (
+            <button
+              onClick={() => {
+                setIsOpen(true);
+                setIsEditing(false);
+                setEditId(null);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+            >
+              <PlusCircle size={18} className="inline mr-1" /> Asset
+            </button>
+          )}
+        </div>
+        
       </div>
 
+      {/* Table */}
       <div className="overflow-auto">
         <table className="w-full bg-white shadow rounded text-sm">
           <thead className="bg-gray-100">
@@ -196,104 +192,180 @@ export default function GAAssetList() {
             </tr>
           </thead>
           <tbody>
-            {assets
-              .filter((a) =>
-                [a.item_name, a.category, a.location].some(field =>
-                  field.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-              )
-              .map((a, i) => (
-                <tr key={a.id} className="border-t">
-                  <td className="p-2">{i + 1}</td>
-                  <td className="p-2">{a.item_name}</td>
-                  <td className="p-2">{a.id}</td>
-                  <td className="p-2">{a.category}</td>
-                  <td className="p-2">{a.status}</td>
-                  <td className="p-2">{a.location}</td>
-                  <td className="p-2">{a.user_assigned}</td>
-                  <td className="p-2 flex gap-2 items-center">
+            {displayedAssets.map((a, i) => (
+              <tr key={a.id} className="border-t">
+                <td className="p-2">{(currentPage - 1) * 10 + i + 1}</td>
+                <td className="p-2">{a.item_name}</td>
+                <td className="p-2">{a.id}</td>
+                <td className="p-2">{a.category}</td>
+                <td className="p-2">{a.status}</td>
+                <td className="p-2">{a.location}</td>
+                <td className="p-2">{a.user_assigned}</td>
+                <td className="p-2 flex gap-2 items-center">
+                  {(role === 'admin' || role === 'staff') && (
                     <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800">
                       <Pencil size={16} />
                     </button>
+                  )}
+                  {role === 'admin' && (
                     <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800">
                       <Trash2 size={16} />
                     </button>
-                    <button
-                      onClick={() => {
-                        const hiddenCanvasId = `qr-download-${a.id}`;
-                        const hiddenCanvas = document.getElementById(hiddenCanvasId) as HTMLCanvasElement;
-                        if (!hiddenCanvas) return;
-                        const url = hiddenCanvas.toDataURL();
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `QR-${a.item_name}.png`;
-                        link.click();
-                      }}
-                      className="text-green-600 hover:text-green-800"
-                    >
-                      <Download size={16} />
-                      <div className="hidden">
-                        <QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} />
-                      </div>
-                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
+                      if (!sourceCanvas) return alert('QR Code not found');
 
-                  </td>
-                </tr>
-              ))}
+                      const qrSize = 1024;
+                      const labelHeight = 160;
+                      const padding = 40;
+                      const canvas = document.createElement('canvas');
+                      canvas.width = qrSize + padding * 2;
+                      canvas.height = qrSize + labelHeight + padding * 2;
+
+                      const ctx = canvas.getContext('2d');
+                      if (!ctx) return;
+
+                      ctx.fillStyle = '#ffffff';
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                      ctx.strokeStyle = '#000000';
+                      ctx.lineWidth = 4;
+                      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+                      ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
+
+                      ctx.fillStyle = '#000000';
+                      ctx.textAlign = 'center';
+
+                      ctx.font = 'bold 48px Arial';
+                      ctx.fillText(a.item_name, canvas.width / 2, qrSize + padding + 70);
+
+                      ctx.font = '36px Arial';
+                      ctx.fillText(`ID: ${a.id}`, canvas.width / 2, qrSize + padding + 120);
+
+                      const link = document.createElement('a');
+                      link.href = canvas.toDataURL('image/png');
+                      link.download = `QR-${a.item_name}.png`;
+                      link.click();
+                    }}
+                    className="text-green-600 hover:text-green-800"
+                  >
+                    <Download size={16} />
+                    <div className="hidden">
+                      <QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} />
+                    </div>
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* Dialog form tetap sama */}
-      <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="bg-white w-full max-w-xl p-6 rounded shadow">
-            <Dialog.Title className="text-lg font-semibold mb-4">
-              {isEditing ? 'Edit GA Asset' : 'Add GA Asset'}
-            </Dialog.Title>
-
-            <div className="grid grid-cols-2 gap-4">
-              {[{ key: 'item_name', label: 'Item Name' }, { key: 'brand', label: 'Brand' }, { key: 'serial_number', label: 'Serial Number' }, { key: 'status', label: 'Status' }, { key: 'location', label: 'Location' }, { key: 'user_assigned', label: 'User Assigned' }, { key: 'remarks', label: 'Remarks' }]
-                .map(({ key, label }) => (
-                  <input
-                    key={key}
-                    type="text"
-                    placeholder={label}
-                    value={(form as any)[key]}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    className="w-full border p-2 rounded"
-                  />
-                ))}
-
-              <select
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full border p-2 rounded"
-              >
-                <option value="">-- Select Category --</option>
-                <option value="Meja">Meja</option>
-                <option value="Kursi">Kursi</option>
-                <option value="Lemari">Lemari</option>
-                <option value="Alat Kebersihan">Alat Kebersihan</option>
-                <option value="Perlengkapan Dapur">Perlengkapan Dapur</option>
-                <option value="AC / Kipas">AC / Kipas</option>
-                <option value="Lainnya">Lainnya</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end space-x-2 mt-6">
-              <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm">Cancel</button>
-              <button
-                onClick={handleSubmit}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                {isEditing ? 'Update' : 'Add'}
-              </button>
-            </div>
-          </Dialog.Panel>
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-4">
+        <p className="text-sm">
+          Showing {(currentPage - 1) * 10 + 1}–
+          {Math.min(currentPage * 10, filteredAssets.length)} of {filteredAssets.length}
+        </p>
+        <div className="space-x-2">
+          <button
+            onClick={prevPage}
+            disabled={currentPage === 1}
+            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <button
+            onClick={nextPage}
+            disabled={currentPage * 10 >= filteredAssets.length}
+            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
-      </Dialog>
+      </div>
+
+      {/* Modal Form */}
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" />
+  <div className="fixed inset-0 flex items-center justify-center p-4">
+    <Dialog.Panel className="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6">
+      <div className="flex justify-between items-center mb-4">
+        <Dialog.Title className="text-xl font-semibold text-gray-800">
+          {isEditing ? 'Edit GA Asset' : 'Add GA Asset'}
+        </Dialog.Title>
+        <button
+          onClick={() => setIsOpen(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { key: 'item_name', label: 'Item Name' },
+            { key: 'brand', label: 'Brand' },
+            { key: 'serial_number', label: 'Serial Number' },
+            { key: 'status', label: 'Status' },
+            { key: 'location', label: 'Location' },
+            { key: 'user_assigned', label: 'User Assigned' },
+            { key: 'remarks', label: 'Remarks' }
+          ].map(({ key, label }) => (
+            <div key={key} className="flex flex-col">
+              <label className="text-sm text-gray-600 mb-1">{label}</label>
+              <input
+                type="text"
+                value={(form as any)[key]}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          ))}
+
+          <div className="flex flex-col md:col-span-2">
+            <label className="text-sm text-gray-600 mb-1">Category</label>
+            <select
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Select Category --</option>
+              <option value="Meja">Meja</option>
+              <option value="Kursi">Kursi</option>
+              <option value="Lemari">Lemari</option>
+              <option value="Alat Kebersihan">Alat Kebersihan</option>
+              <option value="Perlengkapan Dapur">Perlengkapan Dapur</option>
+              <option value="AC / Kipas">AC / Kipas</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-6 gap-2">
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="px-4 py-2 rounded border text-gray-600 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+          >
+            {isEditing ? 'Update' : 'Add'}
+          </button>
+        </div>
+      </form>
+    </Dialog.Panel>
+  </div>
+</Dialog>
+
     </div>
   );
 }

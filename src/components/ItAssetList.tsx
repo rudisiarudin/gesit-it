@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog } from '@headlessui/react';
-import { PlusCircle, Trash2, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, Pencil, Download, X } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { supabase } from '@/lib/supabaseClient';
-
+import DownloadAllQRButton from '@/components/DownloadAllQRButton';
+import { usePagination } from '@/hooks/usePagination';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Asset {
   id: string;
@@ -31,8 +34,6 @@ export default function ItAssetList() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-
   const [form, setForm] = useState<Omit<Asset, 'qr_value'>>({
     id: '',
     item_name: '',
@@ -51,6 +52,8 @@ export default function ItAssetList() {
   });
 
   const router = useRouter();
+  const { role, userId } = useUserRole();
+  const itemsPerPage = 10;
 
   const generateId = async (category: string) => {
     const now = new Date();
@@ -71,8 +74,7 @@ export default function ItAssetList() {
       category.toLowerCase().includes('access') ? 'AP' :
       category.toLowerCase().includes('peripherals') ? 'PH' :
       category.toLowerCase().includes('security') ? 'SC' :
-      category.toLowerCase().includes('tools') ? 'TL' :
-      'OT';
+      category.toLowerCase().includes('tools') ? 'TL' : 'OT';
 
     const { count } = await supabase
       .from('it_assets')
@@ -86,39 +88,32 @@ export default function ItAssetList() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/login');
-      } else {
-        const uid = session.user.id;
-        setUserId(uid);
-        fetchAssets(uid);
-      }
+      if (!session) router.replace('/login');
+      else fetchAssets();
     };
 
     checkSession();
   }, []);
 
-  const fetchAssets = async (uid: string) => {
+  const fetchAssets = async () => {
     const { data, error } = await supabase
       .from('it_assets')
       .select('*')
-      .eq('user_id', uid)
       .order('id', { ascending: true });
 
     if (!error && data) setAssets(data);
-    else console.error('Error fetching assets:', error);
   };
 
   const handleSubmit = async () => {
     if (!userId) return;
 
-    const requiredKeys = ['item_name', 'category', 'brand', 'serial_number', 'status', 'location', 'user_assigned'];
-    const isFormValid = requiredKeys.every((key) => String((form as any)[key]).trim() !== '');
+    const required = ['item_name', 'category', 'brand', 'serial_number', 'status', 'location', 'user_assigned'];
+    const isValid = required.every(key => (form as any)[key]?.trim() !== '');
+    if (!isValid) return alert('Please fill all required fields.');
 
-    if (!isFormValid) return alert('Please fill all required fields.');
+    const qrValue = `${location.origin}/asset?id=${isEditing ? editId : form.id}`;
 
     if (isEditing && editId) {
-      const qrValue = `${location.origin}/asset?id=${editId}`;
       const { error } = await supabase
         .from('it_assets')
         .update({ ...form, qr_value: qrValue })
@@ -126,7 +121,6 @@ export default function ItAssetList() {
       if (error) console.error('Update error:', error);
     } else {
       const newId = await generateId(form.category);
-      const qrValue = `${location.origin}/asset?id=${newId}`;
       const { error } = await supabase.from('it_assets').insert([{
         ...form,
         id: newId,
@@ -139,26 +133,12 @@ export default function ItAssetList() {
     setIsOpen(false);
     setIsEditing(false);
     setEditId(null);
-    setForm({
-      id: '',
-      item_name: '',
-      category: '',
-      brand: '',
-      serial_number: '',
-      status: '',
-      location: '',
-      user_assigned: '',
-      remarks: '',
-      storage: '',
-      ram: '',
-      vga: '',
-      processor: '',
-      user_id: '',
-    });
-    fetchAssets(userId);
+    resetForm();
+    fetchAssets();
   };
 
   const handleEdit = (asset: Asset) => {
+    if (role === 'user') return;
     setForm(asset);
     setEditId(asset.id);
     setIsEditing(true);
@@ -166,55 +146,74 @@ export default function ItAssetList() {
   };
 
   const handleDelete = async (id: string) => {
+    if (role !== 'admin') return;
     if (!confirm('Delete this asset?')) return;
     const { error } = await supabase.from('it_assets').delete().eq('id', id);
-    if (!error && userId) fetchAssets(userId);
+    if (!error) fetchAssets();
   };
 
-  const isLaptopOrPC = ['laptop', 'pc'].includes(form.category.toLowerCase());
+  const handleQRDownload = (asset: Asset) => {
+    const canvas = document.getElementById(`qr-${asset.id}`) as HTMLCanvasElement;
+    if (!canvas) return alert('QR code not found');
+    const pngUrl = canvas.toDataURL('image/png');
+    const downloadLink = document.createElement('a');
+    downloadLink.href = pngUrl;
+    downloadLink.download = `${asset.item_name}-${asset.id}.png`;
+    downloadLink.click();
+  };
+
+  const resetForm = () => {
+    setForm({
+      id: '', item_name: '', category: '', brand: '', serial_number: '', status: '',
+      location: '', user_assigned: '', remarks: '', storage: '', ram: '', vga: '', processor: '', user_id: ''
+    });
+  };
+
+  const filteredAssets = assets.filter((a) =>
+    [a.item_name, a.brand, a.serial_number].some(field =>
+      field.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
+  const { currentPage, paginatedItems, nextPage, prevPage } =
+    usePagination(filteredAssets.length, itemsPerPage);
+  const displayedAssets = paginatedItems(filteredAssets);
+
+  const isLaptopOrPC = form.category.toLowerCase().includes('laptop') || form.category.toLowerCase().includes('pc');
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">IT Asset List</h1>
-        <button
-          onClick={() => {
-            setForm({
-              id: '',
-              item_name: '',
-              category: '',
-              brand: '',
-              serial_number: '',
-              status: '',
-              location: '',
-              user_assigned: '',
-              remarks: '',
-              storage: '',
-              ram: '',
-              vga: '',
-              processor: '',
-              user_id: '',
-            });
-            setIsEditing(false);
-            setEditId(null);
-            setIsOpen(true);
-          }}
-          className="flex items-center bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          <PlusCircle className="mr-2" size={18} /> Add Asset
-        </button>
       </div>
-
-      <div className="mb-4">
+      {/* Search, QR Download, Tambah */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <input
           type="text"
-          placeholder="Search by item name, brand, or serial number..."
+          placeholder="Search item, brand, SN..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border px-4 py-2 rounded w-full md:w-1/3"
         />
+        <div className="flex gap-2">
+          <DownloadAllQRButton assets={displayedAssets} />
+          {(role === 'admin' || role === 'staff') && (
+            <button
+              onClick={() => {
+                resetForm();
+                setIsOpen(true);
+                setIsEditing(false);
+                setEditId(null);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+            >
+              <PlusCircle size={18} className="inline mr-1" /> Asset
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Table */}
       <div className="overflow-auto">
         <table className="w-full bg-white shadow rounded text-sm">
           <thead className="bg-gray-100">
@@ -228,174 +227,223 @@ export default function ItAssetList() {
               <th className="p-2">Status</th>
               <th className="p-2">Location</th>
               <th className="p-2">User</th>
-              <th className="p-2">Remarks</th>
               <th className="p-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {assets
-              .filter((asset) => {
-                const term = searchTerm.toLowerCase();
-                return (
-                  asset.item_name.toLowerCase().includes(term) ||
-                  asset.brand.toLowerCase().includes(term) ||
-                  asset.serial_number.toLowerCase().includes(term)
-                );
-              })
-              .map((asset, idx) => (
-                <tr key={asset.id} className="border-t">
-                  <td className="p-2">{idx + 1}</td>
-                  <td className="p-2">{asset.item_name}</td>
-                  <td className="p-2">{asset.id}</td>
-                  <td className="p-2">{asset.category}</td>
-                  <td className="p-2">{asset.brand}</td>
-                  <td className="p-2">{asset.serial_number}</td>
-                  <td className="p-2">{asset.status}</td>
-                  <td className="p-2">{asset.location}</td>
-                  <td className="p-2">{asset.user_assigned}</td>
-                  <td className="p-2">{asset.remarks}</td>
-                  <td className="p-2 flex gap-2 items-center">
-  <button
-    onClick={() => handleEdit(asset)}
-    className="text-blue-600 hover:text-blue-800"
-    title="Edit"
-  >
-    <Pencil size={16} />
-  </button>
+            {displayedAssets.map((a, i) => (
+              <tr key={a.id} className="border-t">
+                <td className="p-2">{(currentPage - 1) * itemsPerPage + i + 1}</td>
+                <td className="p-2">{a.item_name}</td>
+                <td className="p-2">{a.id}</td>
+                <td className="p-2">{a.category}</td>
+                <td className="p-2">{a.brand}</td>
+                <td className="p-2">{a.serial_number}</td>
+                <td className="p-2">{a.status}</td>
+                <td className="p-2">{a.location}</td>
+                <td className="p-2">{a.user_assigned}</td>
+                <td className="p-2 flex items-center gap-2">
+                  {(role === 'admin' || role === 'staff') && (
+                    <>
+                      <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800">
+                        <Pencil size={16} />
+                      </button>
+                      {role === 'admin' && (
+                        <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <button
+  onClick={() => {
+    const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
+    if (!sourceCanvas) return alert('QR Code not found');
 
-  <button
-    onClick={() => handleDelete(asset.id)}
-    className="text-red-600 hover:text-red-800"
-    title="Delete"
-  >
-    <Trash2 size={16} />
-  </button>
+    const qrSize = 1024;
+    const labelHeight = 160;
+    const padding = 40;
+    const canvas = document.createElement('canvas');
+    canvas.width = qrSize + padding * 2;
+    canvas.height = qrSize + labelHeight + padding * 2;
 
-  <button
-    onClick={() => {
-      const sourceCanvas = document.getElementById(`qr-${asset.id}`) as HTMLCanvasElement;
-      if (!sourceCanvas) return alert('QR Code not found');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-      const qrSize = 1024;
-      const canvas = document.createElement('canvas');
-      canvas.width = qrSize;
-      canvas.height = qrSize + 120;
+    // Background putih
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+    // Border luar
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(sourceCanvas, 0, 0, qrSize, qrSize);
+    // Gambar QR
+    ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
 
-      ctx.font = 'bold 40px Arial';
-      ctx.fillStyle = 'black';
-      ctx.textAlign = 'center';
-      ctx.fillText(`Gesit Asset - ${asset.item_name}`, canvas.width / 2, qrSize + 60);
+    // Text
+    ctx.fillStyle = '#000000';
+    ctx.textAlign = 'center';
 
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = `QR-GesitAsset-${asset.item_name}.png`;
-      link.click();
-    }}
-    className="text-green-600 hover:text-green-800"
-    title="Download QR"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-4 w-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-    </svg>
-  </button>
-</td>
+    ctx.font = 'bold 48px Arial';
+    ctx.fillText(a.item_name, canvas.width / 2, qrSize + padding + 70);
 
-                </tr>
-              ))}
+    ctx.font = '36px Arial';
+    ctx.fillText(`ID: ${a.id}`, canvas.width / 2, qrSize + padding + 120);
+
+    // Download
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    const safeName = a.item_name.replace(/[\\/:*?"<>|]/g, '-'); // hindari karakter ilegal
+    link.download = `QR-${safeName}.png`;
+    link.click();
+  }}
+  className="text-green-600 hover:text-green-800"
+>
+  <Download size={16} />
+</button>
+<QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} className="hidden" />
+
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
+      {/* Pagination Buttons */}
+      <div className="flex justify-between items-center mt-4">
+        <p className="text-sm">
+          Showing {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredAssets.length)} of {filteredAssets.length}
+        </p>
+        <div className="space-x-2">
+          <button onClick={prevPage} disabled={currentPage === 1} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Prev</button>
+          <button onClick={nextPage} disabled={currentPage * itemsPerPage >= filteredAssets.length} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Next</button>
+        </div>
+      </div>
+
+      {/* Modal Form */}
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="bg-white w-full max-w-xl p-6 rounded shadow">
-            <Dialog.Title className="text-lg font-semibold mb-4">
-              {isEditing ? 'Edit Asset' : 'Add Asset'}
-            </Dialog.Title>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { key: 'item_name', label: 'Item Name' },
-                { key: 'brand', label: 'Brand' },
-                { key: 'serial_number', label: 'Serial Number' },
-                { key: 'status', label: 'Status' },
-                { key: 'location', label: 'Location' },
-                { key: 'user_assigned', label: 'User Assigned' },
-                { key: 'remarks', label: 'Remarks' },
-              ].map(({ key, label }) => (
+  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
+  <div className="fixed inset-0 flex items-center justify-center p-4">
+    <Dialog.Panel className="w-full max-w-3xl bg-white rounded-xl shadow-xl p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center border-b pb-3">
+        <Dialog.Title className="text-xl font-semibold text-gray-800">
+          {isEditing ? 'Edit Asset' : 'Tambah Asset'}
+        </Dialog.Title>
+        <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-gray-700">
+          <X size={20} />
+        </button>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Kolom kiri */}
+          <div className="space-y-3">
+            {[
+              { label: 'Item Name', key: 'item_name' },
+              { label: 'Brand', key: 'brand' },
+              { label: 'Serial Number', key: 'serial_number' },
+              { label: 'Status', key: 'status' }
+            ].map(({ label, key }) => (
+              <div key={key}>
+                <label className="block text-sm text-gray-700 mb-1">{label}</label>
                 <input
-                  key={key}
                   type="text"
-                  placeholder={label}
                   value={(form as any)[key]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  className="w-full border p-2 rounded"
+                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
-              ))}
+              </div>
+            ))}
+          </div>
 
+          {/* Kolom kanan */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Category</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full border p-2 rounded"
-                >
-                <option value="">-- Select Category --</option>
+                className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="">Pilih Kategori</option>
                 <option value="Laptop">Laptop</option>
                 <option value="PC">PC</option>
                 <option value="Printer">Printer</option>
                 <option value="Monitor">Monitor</option>
                 <option value="Proyektor">Proyektor</option>
-                <option value="Router / Modem">Router / Modem</option>
-                <option value="Harddisk Eksternal / SSD">Harddisk Eksternal / SSD</option>
-                <option value="Switch / Hub">Switch / Hub</option>
+                <option value="Router">Router</option>
+                <option value="Harddisk">Harddisk</option>
+                <option value="Switch">Switch</option>
                 <option value="Access Point">Access Point</option>
                 <option value="Peripherals">Peripherals</option>
                 <option value="Security">Security</option>
                 <option value="Tools">Tools</option>
-                <option value="Others">Others</option>
-                </select>
-
-
-              {isLaptopOrPC && (
-                <>
-                  {['processor', 'storage', 'ram', 'vga'].map((key) => (
-                    <input
-                      key={key}
-                      type="text"
-                      placeholder={key.toUpperCase()}
-                      value={(form as any)[key]}
-                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                      className="w-full border p-2 rounded"
-                    />
-                  ))}
-                </>
-              )}
+                <option value="Other">Other</option>
+              </select>
             </div>
-
-            <div className="flex justify-end space-x-2 mt-6">
-              <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm">Cancel</button>
-              <button
-                onClick={handleSubmit}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                {isEditing ? 'Update' : 'Add'}
-              </button>
-            </div>
-          </Dialog.Panel>
+            {[
+              { label: 'Location', key: 'location' },
+              { label: 'User Assigned', key: 'user_assigned' },
+              { label: 'Remarks', key: 'remarks' }
+            ].map(({ label, key }) => (
+              <div key={key}>
+                <label className="block text-sm text-gray-700 mb-1">{label}</label>
+                <input
+                  type="text"
+                  value={(form as any)[key]}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </Dialog>
+
+        {/* Optional Field (Laptop/PC only) */}
+        {isLaptopOrPC && (
+          <>
+            <hr className="my-6 border-gray-300" />
+            <h3 className="text-base font-medium text-gray-800 mb-2">Spesifikasi Tambahan</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { label: 'Storage', key: 'storage' },
+                { label: 'RAM', key: 'ram' },
+                { label: 'VGA', key: 'vga' },
+                { label: 'Processor', key: 'processor' }
+              ].map(({ label, key }) => (
+                <div key={key}>
+                  <label className="block text-sm text-gray-700 mb-1">{label}</label>
+                  <input
+                    type="text"
+                    value={(form as any)[key]}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Tombol Submit */}
+        <div className="mt-6 flex justify-end">
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-semibold transition"
+          >
+            {isEditing ? 'Update Asset' : 'Tambah Asset'}
+          </button>
+        </div>
+      </form>
+    </Dialog.Panel>
+  </div>
+</Dialog>
+
     </div>
   );
 }

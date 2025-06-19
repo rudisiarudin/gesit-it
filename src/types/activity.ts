@@ -9,6 +9,6 @@ export type Activity = {
   remarks: string;
   status: string;
   created_at: string;
-  updated_at?: string; // ⬅️ Tambahkan ini jika sudah tersedia
+  updated_at?: string;
   duration?: string;
 };

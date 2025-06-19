@@ -3,16 +3,7 @@
 import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import {
-  Home,
-  List,
-  Calendar,
-  ShoppingCart,
-  Menu,
-  X,
-  User,
-  LogOut,
-  Cpu,
-  Package,
+  Home, List, Calendar, ShoppingCart, Menu, X, User, LogOut, Cpu, Package, Users
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -24,6 +15,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [userName, setUserName] = useState("User");
   const [userInitials, setUserInitials] = useState("U");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -37,6 +29,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             data.user.user_metadata?.full_name ||
             data.user.user_metadata?.name ||
             "User";
+          const role = data.user.user_metadata?.role || null;
+          setUserRole(role);
           setUserName(fullName);
 
           const initials = fullName
@@ -67,16 +61,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   };
 
- const menuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: <Home size={18} /> },
-  { href: "/dashboard/activity-log", label: "Activity IT", icon: <List size={18} /> },
-  { href: "/dashboard/weekly-plan", label: "Weekly Plan", icon: <Calendar size={18} /> },
-  { href: "/dashboard/purchase-plan", label: "Purchase Plan", icon: <ShoppingCart size={18} /> },
-  { href: "/dashboard/it-assets", label: "IT Asset", icon: <Cpu size={18} /> },        // 🧠 Ganti icon
-  { href: "/dashboard/ga-assets", label: "GA Asset", icon: <Package size={18} /> },    // 📦 Ganti icon
-];
+  const menuItems = [
+    { href: "/dashboard", label: "Dashboard", icon: <Home size={18} /> },
+    { href: "/dashboard/activity-log", label: "Activity IT", icon: <List size={18} /> },
+    { href: "/dashboard/weekly-plan", label: "Weekly Plan", icon: <Calendar size={18} /> },
+    { href: "/dashboard/purchase-plan", label: "Purchase Plan", icon: <ShoppingCart size={18} /> },
+    { href: "/dashboard/it-assets", label: "IT Asset", icon: <Cpu size={18} /> },
+    { href: "/dashboard/ga-assets", label: "GA Asset", icon: <Package size={18} /> },
+  ];
 
-
+  // Tambahkan menu user hanya jika role admin
+  if (userRole === "admin") {
+    menuItems.push({
+      href: "/dashboard/users",
+      label: "User Management",
+      icon: <Users size={18} />,
+    });
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex">
@@ -176,9 +177,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

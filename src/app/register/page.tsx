@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,8 +7,9 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -20,27 +21,59 @@ export default function RegisterPage() {
     setError("");
     setSuccess("");
 
+    if (!email.endsWith("@gesit.co.id")) {
+      setError("Hanya email @gesit.co.id yang diizinkan.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Password dan konfirmasi tidak cocok.");
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data: existing, error: existingError } = await supabase
+      .from("user_profiles")
+      .select("id")
+      .eq("username", username)
+      .single();
+
+    if (existing) {
+      setError("Username sudah digunakan. Coba yang lain.");
+      return;
+    }
+
+    // Sign up with metadata
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName }, // simpan nama di metadata
+        data: {
+          full_name: fullName,
+          username: username,
+        },
       },
     });
 
-    if (error) {
-      setError(error.message);
+    if (signUpError || !data.user) {
+      setError(signUpError?.message || "Gagal registrasi.");
+      return;
+    }
+
+    // Insert ke user_profiles table
+    const { error: profileError } = await supabase.from("user_profiles").insert([
+      {
+        id: data.user.id,
+        email,
+        username,
+        full_name: fullName,
+        role: "user",
+      },
+    ]);
+
+    if (profileError) {
+      setError(`Gagal menyimpan profil pengguna: ${profileError.message}`);
     } else {
       setSuccess("Registrasi berhasil! Silakan login.");
-      setEmail("");
-      setFullName("");
-      setPassword("");
-      setConfirmPassword("");
       setTimeout(() => router.push("/login"), 2000);
     }
   };
@@ -48,7 +81,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-white relative overflow-hidden">
       <img
-        src="https://monolith.law/wp-content/uploads/2020/03/shutterstock_360099731-1024x683.jpg"
+        src="https://images.unsplash.com/photo-1519389950473-47ba0277781c"
         alt="Background"
         className="absolute inset-0 w-full h-full object-cover opacity-30 blur-lg"
       />
@@ -70,13 +103,23 @@ export default function RegisterPage() {
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
+            <label className="block text-sm text-gray-700 mb-1">Username</label>
+            <input
+              type="text"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-3 rounded-lg bg-white/70 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
             <label className="block text-sm text-gray-700 mb-1">Nama Lengkap</label>
             <input
               type="text"
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full p-3 rounded-lg bg-white/70 backdrop-blur border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full p-3 rounded-lg bg-white/70 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
           <div>
@@ -86,7 +129,7 @@ export default function RegisterPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-lg bg-white/70 backdrop-blur border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full p-3 rounded-lg bg-white/70 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
           <div>
@@ -97,7 +140,7 @@ export default function RegisterPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 pr-10 rounded-lg bg-white/70 backdrop-blur border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full p-3 pr-10 rounded-lg bg-white/70 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
               <button
                 type="button"
@@ -115,7 +158,7 @@ export default function RegisterPage() {
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full p-3 rounded-lg bg-white/70 backdrop-blur border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full p-3 rounded-lg bg-white/70 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
           <button

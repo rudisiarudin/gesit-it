@@ -233,7 +233,7 @@ export default function Page() {
 
   return (
     <main className="space-y-6">
-      <h2 className="text-xl font-bold mb-4">📝 IT Activity Log</h2>
+      <h1 className="text-2xl font-bold">IT Activity Log</h1>
     <div className="grid gap-3 md:flex md:flex-wrap justify-between items-center mb-4"></div>
       <div className="flex flex-wrap gap-2 md:gap-4">
         <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="input max-w-[160px]" />
