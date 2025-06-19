@@ -3,8 +3,8 @@
 import { useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
-export default function QRScanner({ onScan }: { onScan: (text: string) => void }) {
-  const scannerRef = useRef<HTMLDivElement | null>(null);
+export default function QRScanner({ onScan }: { onScan: (result: string) => void }) {
+  const scannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!scannerRef.current) return;
@@ -12,22 +12,23 @@ export default function QRScanner({ onScan }: { onScan: (text: string) => void }
     const scanner = new Html5QrcodeScanner('qr-reader', {
       fps: 10,
       qrbox: 250,
-    });
+    }, false); // ✅ tambahkan argumen ke-3: verbose
 
     scanner.render(
-      (text) => {
-        onScan(text);
-        scanner.clear().catch(console.error);
+      (decodedText) => {
+        onScan(decodedText);
+        scanner.clear();
       },
-      (err) => {
-        console.warn('Scan error:', err);
+      (error) => {
+        // optional error handling
+        console.warn('QR Scan Error:', error);
       }
     );
 
     return () => {
-      scanner.clear().catch(console.error);
+      scanner.clear().catch((err) => console.error('Failed to clear scanner', err));
     };
-  }, []);
+  }, [onScan]);
 
-  return <div id="qr-reader" ref={scannerRef}></div>;
+  return <div ref={scannerRef} id="qr-reader" className="w-full" />;
 }
