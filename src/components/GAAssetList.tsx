@@ -10,6 +10,9 @@ import { useRouter } from 'next/navigation';
 import DownloadAllQRButton from '@/components/DownloadAllQRButton';
 import { usePagination } from '@/hooks/usePagination';
 import { useUserRole } from '@/hooks/useUserRole';
+import ExportToExcelButton from '@/components/Export/ExportToExcelButton';
+
+
 
 interface GAAsset {
   id: string;
@@ -158,21 +161,37 @@ export default function GAAssetList() {
           className="border px-4 py-2 rounded w-full md:w-1/3"
         />
       
-        <div className="flex gap-2">
-          <DownloadAllQRButton assets={displayedAssets} />
-          {(role === 'admin' || role === 'staff') && (
-            <button
-              onClick={() => {
-                setIsOpen(true);
-                setIsEditing(false);
-                setEditId(null);
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-            >
-              <PlusCircle size={18} className="inline mr-1" /> Asset
-            </button>
-          )}
-        </div>
+        <div className="flex flex-wrap gap-2">
+      <ExportToExcelButton
+        data={filteredAssets}
+        fileName="GA_Asset_List"
+        columns={[
+          'id',
+          'item_name',
+          'category',
+          'brand',
+          'serial_number',
+          'status',
+          'location',
+          'user_assigned',
+          'remarks',
+        ]}
+      />
+      <DownloadAllQRButton assets={displayedAssets} />
+      {(role === 'admin' || role === 'staff') && (
+        <button
+          onClick={() => {
+            setIsOpen(true);
+            setIsEditing(false);
+            setEditId(null);
+          }}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+        >
+          <PlusCircle size={18} className="inline mr-1" /> Asset
+        </button>
+      )}
+    </div>
+
         
       </div>
 

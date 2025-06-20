@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 import {
-  Activity,
+  Activity as ActivityIcon,
   CheckCircle,
   Loader2,
   Monitor,
   Package,
-} from "lucide-react";
+  Clock,
+} from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -27,7 +29,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) router.replace("/login");
+      if (!session) router.replace('/login');
       else fetchDashboardStats();
       setSessionChecked(true);
     };
@@ -35,17 +37,17 @@ export default function DashboardPage() {
   }, []);
 
   const fetchDashboardStats = async () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split('T')[0];
     const [{ data: actData }, { data: itAssets }, { data: gaAssets }] = await Promise.all([
-      supabase.from("activities").select("*").gte("created_at", `${today}T00:00:00`),
-      supabase.from("it_assets").select("id"),
-      supabase.from("ga_assets").select("id"),
+      supabase.from('activities').select('*').gte('created_at', `${today}T00:00:00`),
+      supabase.from('it_assets').select('id'),
+      supabase.from('ga_assets').select('id'),
     ]);
 
     if (actData) {
       setTodayActivities(actData);
       const totalActivities = actData.length;
-      const completedActivities = actData.filter((a) => a.status === "Completed").length;
+      const completedActivities = actData.filter((a) => a.status === 'Completed').length;
       setTotal(totalActivities);
       setCompleted(completedActivities);
       setInProgress(totalActivities - completedActivities);
@@ -112,7 +114,7 @@ export default function DashboardPage() {
         {/* Activity Summary */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Card
-            icon={Activity}
+            icon={ActivityIcon}
             title="Total Activities"
             value={total}
             bg=""
@@ -160,18 +162,28 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Today's Activities */}
+        {/* Today's Activities Timeline */}
         {todayActivities.length > 0 && (
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-gray-800">Today's Activities</h2>
-            <div className="bg-white border rounded-xl shadow-sm">
-              <ul className="divide-y divide-gray-100 text-sm">
-                {todayActivities.map((a, i) => (
-                  <li key={i} className="p-4 text-gray-700">
-                    <span className="font-medium text-blue-600">{a.user || "User"}</span> — {a.activity}
-                  </li>
+            <div className="relative border-l border-gray-200 pl-4">
+              {todayActivities
+                .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                .map((a, i) => (
+                  <div key={i} className="mb-6 relative">
+                    <span className="absolute -left-2 top-1.5 w-4 h-4 bg-blue-600 rounded-full border border-white"></span>
+                    <div className="bg-white p-4 rounded-lg shadow border">
+                      <div className="text-sm text-gray-600">
+                        <span className="font-semibold text-blue-700">{a.it}</span> - {a.activity_name}
+                      </div>
+                      <div className="text-xs text-gray-500 italic">{a.category}</div>
+                      <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+                        <Clock size={14} className="text-gray-400" />
+                        {format(new Date(a.created_at), 'dd-MMM-yyyy HH:mm')}
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </ul>
             </div>
           </div>
         )}

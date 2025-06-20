@@ -1,22 +1,7 @@
-"use client";
+'use client';
 
-import React from "react";
-import { FileText, FileSpreadsheet, File } from "lucide-react";
-
-type Activity = {
-  id: number;
-  activity_name: string;
-  location: string;
-  user: string;
-  it: string;
-  type: string;
-  category: string;
-  remarks: string;
-  status: string;
-  duration?: string;
-  created_at: string;
-  updated_at?: string;
-};
+import { FileText, FileSpreadsheet, File } from 'lucide-react';
+import { Activity } from './types';
 
 type Props = {
   activities: Activity[];
@@ -25,23 +10,14 @@ type Props = {
 export default function ExportButtons({ activities }: Props) {
   const exportCSV = () => {
     const headers = [
-      "activity_name",
-      "location",
-      "user",
-      "it",
-      "type",
-      "category",
-      "remarks",
-      "status",
-      "duration",
-      "created_at",
-      "updated_at",
+      "activity_name", "location", "user", "it", "type", "category",
+      "status", "duration", "created_at", "updated_at", "remarks"
     ];
 
     const csvContent = [
       headers.join(","),
       ...activities.map((a) =>
-        headers.map((h) => `"${(a as Record<string, string | number | null>)[h] ?? ""}"`).join(",")
+        headers.map((h) => `"${(a as Record<string, any>)[h] ?? ""}"`).join(",")
       ),
     ].join("\n");
 
@@ -66,40 +42,49 @@ export default function ExportButtons({ activities }: Props) {
     const doc = new jsPDF();
     autoTable(doc, {
       head: [[
-        "Activity", "Location", "User", "IT", "Type", "Category", "Status", "Duration", "Created At", "Updated At"
+        "Activity", "Location", "User", "IT", "Type", "Category", "Status", "Duration", "Created At", "Updated At", "Remarks"
       ]],
       body: activities.map((a) => [
-        a.activity_name, a.location, a.user, a.it, a.type, a.category,
-        a.status, a.duration || "-", a.created_at, a.updated_at || "-"
+        a.activity_name,
+        a.location,
+        a.user,
+        a.it,
+        a.type,
+        a.category,
+        a.status,
+        a.duration || "-",
+        a.created_at,
+        a.updated_at || "-",
+        a.remarks
       ]),
     });
     doc.save("activities.pdf");
   };
 
   return (
-    <div className="flex gap-2 flex-wrap justify-end">
+    <div className="flex gap-1 flex-wrap">
       <button
         onClick={exportCSV}
-        className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 transition"
+        className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-xs hover:bg-gray-200 transition"
         title="Export to CSV"
       >
-        <FileText size={16} />
+        <FileText size={18} />
         CSV
       </button>
       <button
         onClick={exportExcel}
-        className="flex items-center gap-2 bg-green-100 px-3 py-2 rounded hover:bg-green-200 transition"
+        className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded text-xs hover:bg-green-200 transition"
         title="Export to Excel"
       >
-        <FileSpreadsheet size={16} />
+        <FileSpreadsheet size={18} />
         Excel
       </button>
       <button
         onClick={exportPDF}
-        className="flex items-center gap-2 bg-red-100 px-3 py-2 rounded hover:bg-red-200 transition"
+        className="flex items-center gap-1 bg-red-100 px-2 py-1 rounded text-xs hover:bg-red-200 transition"
         title="Export to PDF"
       >
-        <File size={16} />
+        <File size={18} />
         PDF
       </button>
     </div>

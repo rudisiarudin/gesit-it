@@ -30,6 +30,7 @@ export default function PurchasePlanPage() {
     estimated_price: 0,
   });
   const [userId, setUserId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const router = useRouter();
@@ -40,25 +41,37 @@ export default function PurchasePlanPage() {
       if (!session) {
         router.replace('/login');
       } else {
-        setUserId(session.user.id);
-        fetchPlans(session.user.id);
+        const uid = session.user.id;
+        setUserId(uid);
+        fetchPlans();
+
+        const { data: profile, error } = await supabase
+          .from('user_profiles') // ambil dari tabel user_profiles
+          .select('role')
+          .eq('id', uid)
+          .single();
+
+        console.log('Current role:', profile?.role);
+
+        if (!error && profile) {
+          setRole(profile.role.toLowerCase());
+        }
       }
     };
     checkSession();
   }, []);
 
-  const fetchPlans = async (uid: string) => {
+  const fetchPlans = async () => {
     const { data, error } = await supabase
       .from('purchase_plans')
       .select('*')
-      .eq('user_id', uid)
       .order('id', { ascending: true });
 
     if (!error && data) setPlans(data);
   };
 
   const handleSubmit = async () => {
-    if (!userId) return;
+    if (!userId || role === 'user') return;
 
     const payload = {
       ...form,
@@ -76,15 +89,17 @@ export default function PurchasePlanPage() {
     setForm({ item_name: '', qty: 1, unit: '', needed_by: '', status: '', remarks: '', estimated_price: 0 });
     setIsOpen(false);
     setEditId(null);
-    fetchPlans(userId);
+    fetchPlans();
   };
 
   const handleDelete = async (id: number) => {
+    if (role !== 'admin') return;
     await supabase.from('purchase_plans').delete().eq('id', id);
-    if (userId) fetchPlans(userId);
+    fetchPlans();
   };
 
   const handleEdit = (plan: PurchasePlan) => {
+    if (role === 'user') return;
     setForm({
       item_name: plan.item_name,
       qty: plan.qty,
@@ -105,16 +120,18 @@ export default function PurchasePlanPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Purchase Plan</h1>
-        <button
-          onClick={() => {
-            setIsOpen(true);
-            setEditId(null);
-            setForm({ item_name: '', qty: 1, unit: '', needed_by: '', status: '', remarks: '', estimated_price: 0 });
-          }}
-          className="flex items-center bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          <PlusCircle className="mr-2" size={18} /> Add Purchase
-        </button>
+        {(role === 'admin' || role === 'staff') && (
+          <button
+            onClick={() => {
+              setIsOpen(true);
+              setEditId(null);
+              setForm({ item_name: '', qty: 1, unit: '', needed_by: '', status: '', remarks: '', estimated_price: 0 });
+            }}
+            className="flex items-center bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            <PlusCircle className="mr-2" size={18} /> Add Purchase
+          </button>
+        )}
       </div>
 
       <table className="w-full bg-white shadow rounded">
@@ -145,12 +162,16 @@ export default function PurchasePlanPage() {
               <td className="p-3">{plan.status}</td>
               <td className="p-3">{plan.remarks}</td>
               <td className="p-3 flex gap-2">
-                <button onClick={() => handleEdit(plan)} className="text-blue-600 hover:underline">
-                  <Pencil size={16} />
-                </button>
-                <button onClick={() => handleDelete(plan.id)} className="text-red-600 hover:underline">
-                  <Trash2 size={16} />
-                </button>
+                {(role === 'admin' || role === 'staff') && (
+                  <button onClick={() => handleEdit(plan)} className="text-blue-600 hover:underline">
+                    <Pencil size={16} />
+                  </button>
+                )}
+                {role === 'admin' && (
+                  <button onClick={() => handleDelete(plan.id)} className="text-red-600 hover:underline">
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </td>
             </tr>
           ))}
@@ -165,64 +186,40 @@ export default function PurchasePlanPage() {
               {editId ? 'Edit' : 'Add'} Purchase Plan
             </Dialog.Title>
             <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Item Name"
-                value={form.item_name}
+              <input type="text" placeholder="Item Name" value={form.item_name}
                 onChange={(e) => setForm({ ...form, item_name: e.target.value })}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="number"
-                placeholder="Qty"
-                value={form.qty}
+                className="w-full border p-2 rounded" />
+              <input type="number" placeholder="Qty" value={form.qty}
                 onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="Satuan"
-                value={form.unit}
+                className="w-full border p-2 rounded" />
+              <input type="text" placeholder="Satuan" value={form.unit}
                 onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="date"
-                value={form.needed_by}
+                className="w-full border p-2 rounded" />
+              <input type="date" value={form.needed_by}
                 onChange={(e) => setForm({ ...form, needed_by: e.target.value })}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="number"
-                placeholder="Estimasi Harga"
-                value={form.estimated_price}
+                className="w-full border p-2 rounded" />
+              <input type="number" placeholder="Estimasi Harga" value={form.estimated_price}
                 onChange={(e) => setForm({ ...form, estimated_price: Number(e.target.value) })}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="Status"
-                value={form.status}
+                className="w-full border p-2 rounded" />
+              <input type="text" placeholder="Status" value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="Remarks"
-                value={form.remarks}
+                className="w-full border p-2 rounded" />
+              <input type="text" placeholder="Remarks" value={form.remarks}
                 onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                className="w-full border p-2 rounded"
-              />
+                className="w-full border p-2 rounded" />
+
               <div className="flex justify-end gap-2 pt-4">
                 <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm">
                   Cancel
                 </button>
-                <button
-                  onClick={handleSubmit}
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                >
-                  {editId ? 'Update' : 'Add'}
-                </button>
+                {(role === 'admin' || role === 'staff') && (
+                  <button
+                    onClick={handleSubmit}
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  >
+                    {editId ? 'Update' : 'Add'}
+                  </button>
+                )}
               </div>
             </div>
           </Dialog.Panel>
