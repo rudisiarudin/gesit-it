@@ -1,8 +1,8 @@
-// app/dashboard/users/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import Toast from '@/components/Toast';
 
 type UserProfile = {
   id: string;
@@ -17,6 +17,12 @@ export default function UserManagementPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const fetchUsers = async () => {
     const { data, error } = await supabase
@@ -39,9 +45,20 @@ export default function UserManagementPage() {
 
     if (!error) {
       setUsers(users.map(user => user.id === id ? { ...user, role: newRole } : user));
-      alert('Role updated!');
+      showToast('Role updated successfully.', 'success');
+
+      const res = await fetch('/api/update-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id, role: newRole }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        showToast(`Auth metadata update failed: ${result.error}`, 'error');
+      }
     } else {
-      alert('Failed to update role');
+      showToast('Failed to update role.', 'error');
     }
   };
 
@@ -53,13 +70,14 @@ export default function UserManagementPage() {
 
     if (!error) {
       setUsers(users.map(user => user.id === id ? { ...user, full_name: newName } : user));
+      showToast('Name updated.', 'success');
     } else {
-      alert('Failed to update name');
+      showToast('Failed to update name.', 'error');
     }
   };
 
   const disableUser = async (id: string) => {
-    const confirmed = confirm("Are you sure you want to disable this user?");
+    const confirmed = window.confirm("Are you sure you want to disable this user?");
     if (!confirmed) return;
 
     const { error } = await supabase
@@ -69,8 +87,9 @@ export default function UserManagementPage() {
 
     if (!error) {
       setUsers(users.map(user => user.id === id ? { ...user, is_active: false } : user));
+      showToast('User disabled.', 'success');
     } else {
-      alert('Failed to disable user');
+      showToast('Failed to disable user.', 'error');
     }
   };
 
@@ -80,9 +99,9 @@ export default function UserManagementPage() {
     });
 
     if (!error) {
-      alert(`Reset password email sent to ${email}`);
+      showToast(`Reset email sent to ${email}`, 'success');
     } else {
-      alert('Failed to send reset email');
+      showToast('Failed to send reset email.', 'error');
     }
   };
 
@@ -94,11 +113,19 @@ export default function UserManagementPage() {
 
   return (
     <div className="p-6">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <h1 className="text-2xl font-bold mb-4">User Management</h1>
 
       <input
         type="text"
-        placeholder="Cari email, nama, atau username..."
+        placeholder="Search by email, name, or username..."
         className="mb-4 p-2 border rounded w-full max-w-sm"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -169,7 +196,7 @@ export default function UserManagementPage() {
               {filteredUsers.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-4 text-gray-500">
-                    Tidak ada user ditemukan.
+                    No users found.
                   </td>
                 </tr>
               )}
