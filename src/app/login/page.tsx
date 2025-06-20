@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Eye, EyeOff } from "lucide-react";
@@ -10,12 +10,27 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true); // default true
   const [error, setError] = useState("");
+
+  // Kalau rememberMe = false, logout otomatis saat tab/window ditutup
+  useEffect(() => {
+    if (!rememberMe) {
+      const handleBeforeUnload = async () => {
+        await supabase.auth.signOut();
+      };
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [rememberMe]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    // Cari email dari username
     const { data: userData, error: userError } = await supabase
       .from("user_profiles")
       .select("email")
@@ -27,6 +42,7 @@ export default function LoginPage() {
       return;
     }
 
+    // Login dengan email + password
     const { error: loginError } = await supabase.auth.signInWithPassword({
       email: userData.email,
       password,
@@ -128,6 +144,25 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+
+              <div className="flex justify-between items-center mt-2">
+                <label className="inline-flex items-center gap-2 text-sm select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={() => setRememberMe(!rememberMe)}
+                    className="form-checkbox text-blue-600"
+                  />
+                  Remember me
+                </label>
+
+                <a
+                  href="/forgot-password"
+                  className="text-blue-600 font-semibold hover:underline text-sm"
+                >
+                  Forgot password?
+                </a>
+              </div>
             </div>
 
             <button
@@ -145,7 +180,10 @@ export default function LoginPage() {
 
           <p className="text-center mt-6 text-gray-600 text-sm sm:text-base">
             Don’t have an account?{" "}
-            <a href="/register" className="text-blue-600 font-semibold hover:underline">
+            <a
+              href="/register"
+              className="text-blue-600 font-semibold hover:underline"
+            >
               Register
             </a>
           </p>
