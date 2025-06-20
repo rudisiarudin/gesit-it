@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
   Tag, BadgeCheck, Hash, Settings, MapPin, User, StickyNote,
-  Cpu, HardDrive, MemoryStick, MonitorSmartphone,
+  Cpu, HardDrive, MemoryStick, MonitorSmartphone, Building2, Users,
 } from 'lucide-react';
 
 interface Asset {
@@ -22,6 +22,8 @@ interface Asset {
   ram?: string;
   vga?: string;
   processor?: string;
+  company?: string;
+  department?: string;
 }
 
 export default function AssetDetailClient() {
@@ -85,6 +87,8 @@ export default function AssetDetailClient() {
           <DetailItem icon={<Hash size={16} />} label="Serial Number" value={asset.serial_number} />
           <DetailItem icon={<Settings size={16} />} label="Status" value={asset.status} />
           <DetailItem icon={<MapPin size={16} />} label="Location" value={asset.location} />
+          <DetailItem icon={<Building2 size={16} />} label="Company" value={asset.company || '-'} />
+          <DetailItem icon={<Users size={16} />} label="Department" value={asset.department || '-'} />
           <div className="col-span-1 md:col-span-2">
             <DetailItem icon={<StickyNote size={16} />} label="Remarks" value={asset.remarks} />
           </div>
