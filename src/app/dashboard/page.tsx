@@ -1,17 +1,19 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 import {
-  Activity,
+  Activity as ActivityIcon,
   CheckCircle,
   Loader2,
   Monitor,
   Package,
-} from "lucide-react";
+  Clock,
+} from 'lucide-react';
+import { format } from 'date-fns';
 
-export default function Page() {
+export default function DashboardPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
@@ -26,35 +28,26 @@ export default function Page() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.replace("/login");
-      } else {
-        fetchDashboardStats();
-      }
-
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) router.replace('/login');
+      else fetchDashboardStats();
       setSessionChecked(true);
     };
-
     checkSession();
   }, []);
 
   const fetchDashboardStats = async () => {
-    const today = new Date().toISOString().split("T")[0];
-
+    const today = new Date().toISOString().split('T')[0];
     const [{ data: actData }, { data: itAssets }, { data: gaAssets }] = await Promise.all([
-      supabase.from("activities").select("*").gte("created_at", `${today}T00:00:00`),
-      supabase.from("it_assets").select("id"),
-      supabase.from("ga_assets").select("id"),
+      supabase.from('activities').select('*').gte('created_at', `${today}T00:00:00`),
+      supabase.from('it_assets').select('id'),
+      supabase.from('ga_assets').select('id'),
     ]);
 
     if (actData) {
       setTodayActivities(actData);
       const totalActivities = actData.length;
-      const completedActivities = actData.filter((a) => a.status === "Completed").length;
+      const completedActivities = actData.filter((a) => a.status === 'Completed').length;
       setTotal(totalActivities);
       setCompleted(completedActivities);
       setInProgress(totalActivities - completedActivities);
@@ -62,7 +55,6 @@ export default function Page() {
 
     setTotalITAssets(itAssets?.length || 0);
     setTotalGAAssets(gaAssets?.length || 0);
-
     setLoading(false);
   };
 
@@ -82,10 +74,10 @@ export default function Page() {
     iconColor: string;
   }) => (
     <div
-      className={`flex items-center gap-4 rounded-2xl p-5 shadow-sm ${bg} transition hover:scale-[1.02] hover:shadow-md`}
+      className={`flex items-center gap-4 rounded-xl p-5 shadow bg-white border hover:shadow-md transition-transform hover:scale-[1.02] ${bg}`}
     >
-      <div className={`p-3 rounded-xl ${iconColor} bg-white shadow-sm`}>
-        <Icon size={28} />
+      <div className={`p-3 rounded-full ${iconColor} bg-opacity-10`}>
+        <Icon size={28} className={iconColor} />
       </div>
       <div className="flex-1">
         <p className={`text-sm font-medium ${textColor}`}>{title}</p>
@@ -97,86 +89,103 @@ export default function Page() {
   if (!sessionChecked || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-gray-600 text-lg">Memuat dashboard...</p>
+        <div className="text-gray-500 text-lg flex items-center gap-2">
+          <Loader2 className="animate-spin" /> Loading dashboard...
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 md:px-8 bg-gray-100">
-      <div className="bg-white rounded-2xl shadow p-6 md:p-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-          Dashboard Utama
-        </h1>
-        <p className="text-gray-600 text-lg">
-          Selamat datang di sistem log IT <span className="font-semibold">Gesit</span>.
-        </p>
+    <main className="min-h-screen px-4 py-6 md:px-8 bg-gray-50">
+      <div className="max-w-7xl mx-auto space-y-10">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
+              IT Gesit Dashboard
+            </h1>
+            <p className="text-gray-600 text-base mt-1">
+              Welcome back. Here's your activity summary.
+            </p>
+          </div>
+        </div>
 
-        {/* Aktivitas */}
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Activity Summary */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Card
-            icon={Activity}
-            title="Total Aktivitas"
+            icon={ActivityIcon}
+            title="Total Activities"
             value={total}
-            bg="bg-blue-50"
-            textColor="text-blue-800"
-            iconColor="text-blue-600"
+            bg=""
+            textColor="text-blue-700"
+            iconColor="text-blue-700"
           />
           <Card
             icon={CheckCircle}
-            title="Selesai"
+            title="Completed"
             value={completed}
-            bg="bg-green-50"
-            textColor="text-green-800"
-            iconColor="text-green-600"
+            bg=""
+            textColor="text-green-700"
+            iconColor="text-green-700"
           />
           <Card
             icon={Loader2}
-            title="Proses"
+            title="In Progress"
             value={inProgress}
-            bg="bg-yellow-50"
-            textColor="text-yellow-800"
-            iconColor="text-yellow-600"
+            bg=""
+            textColor="text-yellow-700"
+            iconColor="text-yellow-700"
           />
         </div>
 
-        {/* Aset */}
-        <h2 className="text-xl font-semibold text-gray-700 mt-10 mb-4">
-          Ringkasan Aset
-        </h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
-          <Card
-            icon={Monitor}
-            title="Aset IT"
-            value={totalITAssets}
-            bg="bg-purple-50"
-            textColor="text-purple-800"
-            iconColor="text-purple-600"
-          />
-          <Card
-            icon={Package}
-            title="Aset GA"
-            value={totalGAAssets}
-            bg="bg-indigo-50"
-            textColor="text-indigo-800"
-            iconColor="text-indigo-600"
-          />
+        {/* Asset Summary */}
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-gray-800">Asset Summary</h2>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Card
+              icon={Monitor}
+              title="IT Assets"
+              value={totalITAssets}
+              bg=""
+              textColor="text-purple-700"
+              iconColor="text-purple-700"
+            />
+            <Card
+              icon={Package}
+              title="GA Assets"
+              value={totalGAAssets}
+              bg=""
+              textColor="text-indigo-700"
+              iconColor="text-indigo-700"
+            />
+          </div>
         </div>
 
-        {/* Notifikasi Hari Ini */}
+        {/* Today's Activities Timeline */}
         {todayActivities.length > 0 && (
-          <>
-            <h2 className="text-xl font-semibold text-gray-700 mt-10 mb-4">
-              Aktivitas Hari Ini
-            </h2>
-            <ul className="divide-y divide-gray-200 bg-white rounded-xl border shadow-sm">
-              {todayActivities.map((a, i) => (
-                <li key={i} className="p-4 text-sm text-gray-700">
-                  <span className="font-semibold">{a.user || "User"}</span> - {a.activity}
-                </li>
-              ))}
-            </ul>
-          </>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-800">Today's Activities</h2>
+            <div className="relative border-l border-gray-200 pl-4">
+              {todayActivities
+                .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                .map((a, i) => (
+                  <div key={i} className="mb-6 relative">
+                    <span className="absolute -left-2 top-1.5 w-4 h-4 bg-blue-600 rounded-full border border-white"></span>
+                    <div className="bg-white p-4 rounded-lg shadow border">
+                      <div className="text-sm text-gray-600">
+                        <span className="font-semibold text-blue-700">{a.it}</span> - {a.activity_name}
+                      </div>
+                      <div className="text-xs text-gray-500 italic">{a.category}</div>
+                      <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+                        <Clock size={14} className="text-gray-400" />
+                        {format(new Date(a.created_at), 'dd-MMM-yyyy HH:mm')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
         )}
       </div>
     </main>

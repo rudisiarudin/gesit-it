@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
   Tag, BadgeCheck, Hash, Settings, MapPin, User, StickyNote,
-  Cpu, HardDrive, MemoryStick, MonitorSmartphone,
+  Cpu, HardDrive, MemoryStick, MonitorSmartphone, Building2, Users,
 } from 'lucide-react';
 
 interface Asset {
@@ -22,6 +22,8 @@ interface Asset {
   ram?: string;
   vga?: string;
   processor?: string;
+  company?: string;
+  department?: string;
 }
 
 export default function AssetDetailClient() {
@@ -69,13 +71,15 @@ export default function AssetDetailClient() {
   const isLaptopOrPC = ['laptop', 'pc'].includes(asset.category.toLowerCase());
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+      {/* Judul luar */}
+      <h1 className="text-3xl font-bold text-gray-800 text-center">IT Asset Detail</h1>
+
       <div className="bg-white rounded-xl shadow-md p-6 space-y-6 border border-gray-200">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-gray-800">IT Asset Detail</h1>
-          <p className="text-gray-600 text-sm">
-            Item Name: <span className="font-semibold">{asset.item_name}</span>
-          </p>
+        {/* Judul dalam card */}
+        <div className="text-center space-y-1">
+          <p className="text-xl font-semibold text-gray-800">{asset.item_name}</p>
+          <p className="text-sm text-gray-500 font-mono">ID: {asset.id}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -85,6 +89,8 @@ export default function AssetDetailClient() {
           <DetailItem icon={<Hash size={16} />} label="Serial Number" value={asset.serial_number} />
           <DetailItem icon={<Settings size={16} />} label="Status" value={asset.status} />
           <DetailItem icon={<MapPin size={16} />} label="Location" value={asset.location} />
+          <DetailItem icon={<Building2 size={16} />} label="Company" value={asset.company || '-'} />
+          <DetailItem icon={<Users size={16} />} label="Department" value={asset.department || '-'} />
           <div className="col-span-1 md:col-span-2">
             <DetailItem icon={<StickyNote size={16} />} label="Remarks" value={asset.remarks} />
           </div>

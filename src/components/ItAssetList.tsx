@@ -24,9 +24,12 @@ interface Asset {
   ram?: string;
   vga?: string;
   processor?: string;
+  company?: string;         // <- Tambah ini
+  department?: string;      // <- Tambah ini
   qr_value: string;
   user_id?: string;
 }
+
 
 export default function ItAssetList() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -48,42 +51,49 @@ export default function ItAssetList() {
     ram: '',
     vga: '',
     processor: '',
-    user_id: '',
+    company: '',          // <- Tambah ini
+    department: '',       // <- Tambah ini
+    user_id: ''
   });
 
   const router = useRouter();
   const { role, userId } = useUserRole();
   const itemsPerPage = 10;
 
-  const generateId = async (category: string) => {
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yy = String(now.getFullYear()).slice(2);
-    const prefix = 'IT';
+ const generateId = async (category: string, company: string) => {
+  const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
+    company.toLowerCase().includes('gesit perkasa') ? 'GP' :
+    company.toLowerCase().includes('sircon') ? 'SI' :
+    company.toLowerCase().includes('alakasa') ? 'AI' :
+    company.toLowerCase().includes('gesit graha') ? 'GG' :
+    company.toLowerCase().includes('gesit intrade') ? 'GI' :
+    company.toLowerCase().includes('dharma') ? 'DAS' :
+    company.toLowerCase().includes('dinamika') ? 'DSM' : 'XX';
 
-    const catCode =
-      category.toLowerCase().includes('laptop') ? 'LP' :
-      category.toLowerCase().includes('pc') ? 'PC' :
-      category.toLowerCase().includes('printer') ? 'PR' :
-      category.toLowerCase().includes('monitor') ? 'MN' :
-      category.toLowerCase().includes('proyektor') ? 'PJ' :
-      category.toLowerCase().includes('router') ? 'RT' :
-      category.toLowerCase().includes('harddisk') ? 'HD' :
-      category.toLowerCase().includes('switch') ? 'SW' :
-      category.toLowerCase().includes('access') ? 'AP' :
-      category.toLowerCase().includes('peripherals') ? 'PH' :
-      category.toLowerCase().includes('security') ? 'SC' :
-      category.toLowerCase().includes('tools') ? 'TL' : 'OT';
+  const catCode =
+    category.toLowerCase().includes('laptop') ? 'LP' :
+    category.toLowerCase().includes('pc') ? 'PC' :
+    category.toLowerCase().includes('printer') ? 'PR' :
+    category.toLowerCase().includes('monitor') ? 'MN' :
+    category.toLowerCase().includes('proyektor') ? 'PJ' :
+    category.toLowerCase().includes('router') ? 'RT' :
+    category.toLowerCase().includes('harddisk') ? 'HD' :
+    category.toLowerCase().includes('switch') ? 'SW' :
+    category.toLowerCase().includes('access') ? 'AP' :
+    category.toLowerCase().includes('peripherals') ? 'PH' :
+    category.toLowerCase().includes('security') ? 'SC' :
+    category.toLowerCase().includes('tools') ? 'TL' : 'OT';
 
-    const { count } = await supabase
-      .from('it_assets')
-      .select('*', { count: 'exact', head: true })
-      .eq('category', category);
+  const { count } = await supabase
+    .from('it_assets')
+    .select('*', { count: 'exact', head: true })
+    .eq('category', category)
+    .eq('company', company); // pastikan kolom 'company' ada di table
 
-    const serial = String((count || 0) + 1).padStart(3, '0');
-    return `${prefix}-${dd}${mm}${yy}-${catCode}-${serial}`;
-  };
+  const serial = String((count || 0) + 1).padStart(3, '0');
+  return `${companyCode}-${catCode}-${serial}`;
+};
+
 
   useEffect(() => {
     const checkSession = async () => {
@@ -107,34 +117,57 @@ export default function ItAssetList() {
   const handleSubmit = async () => {
     if (!userId) return;
 
-    const required = ['item_name', 'category', 'brand', 'serial_number', 'status', 'location', 'user_assigned'];
-    const isValid = required.every(key => (form as any)[key]?.trim() !== '');
-    if (!isValid) return alert('Please fill all required fields.');
+    const required = [
+  'item_name', 'category', 'brand', 'serial_number',
+  'status', 'location', 'user_assigned', 'company', 'department'
+];
 
-    const qrValue = `${location.origin}/asset?id=${isEditing ? editId : form.id}`;
+const isValid = required.every((key) => {
+  const value = (form as Record<string, string>)[key];
+  return value && value.trim() !== '';
+});
 
-    if (isEditing && editId) {
-      const { error } = await supabase
-        .from('it_assets')
-        .update({ ...form, qr_value: qrValue })
-        .eq('id', editId);
-      if (error) console.error('Update error:', error);
-    } else {
-      const newId = await generateId(form.category);
-      const { error } = await supabase.from('it_assets').insert([{
-        ...form,
-        id: newId,
-        qr_value: qrValue,
-        user_id: userId
-      }]);
-      if (error) console.error('Insert error:', error);
-    }
+if (!isValid) return alert('Please fill all required fields.');
 
-    setIsOpen(false);
-    setIsEditing(false);
-    setEditId(null);
-    resetForm();
-    fetchAssets();
+if (isEditing && editId) {
+  const qrValue = `${location.origin}/asset?id=${editId}`;
+  const { error } = await supabase
+    .from('it_assets')
+    .update({ ...form, qr_value: qrValue })
+    .eq('id', editId);
+
+  if (error) {
+    console.error('Update error:', error);
+    return;
+  }
+} else {
+ if (!form.category || !form.company) {
+  alert('Category dan Company wajib diisi.');
+  return;
+}
+
+const newId = await generateId(form.category, form.company);
+
+  const qrValue = `${location.origin}/asset?id=${newId}`;
+  const { error } = await supabase.from('it_assets').insert([{
+    ...form,
+    id: newId,
+    qr_value: qrValue,
+    user_id: userId
+  }]);
+
+  if (error) {
+    console.error('Insert error:', error);
+    return;
+  }
+}
+
+setIsOpen(false);
+setIsEditing(false);
+setEditId(null);
+resetForm();
+fetchAssets();
+
   };
 
   const handleEdit = (asset: Asset) => {
@@ -164,9 +197,10 @@ export default function ItAssetList() {
 
   const resetForm = () => {
     setForm({
-      id: '', item_name: '', category: '', brand: '', serial_number: '', status: '',
-      location: '', user_assigned: '', remarks: '', storage: '', ram: '', vga: '', processor: '', user_id: ''
-    });
+  id: '', item_name: '', category: '', brand: '', serial_number: '', status: '',
+  location: '', user_assigned: '', remarks: '', storage: '', ram: '', vga: '', processor: '', user_id: '',
+  company: '', department: '' // ← tambahkan ini
+});
   };
 
   const filteredAssets = assets.filter((a) =>
@@ -243,69 +277,71 @@ export default function ItAssetList() {
                 <td className="p-2">{a.location}</td>
                 <td className="p-2">{a.user_assigned}</td>
                 <td className="p-2 flex items-center gap-2">
-                  {(role === 'admin' || role === 'staff') && (
-                    <>
-                      <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800">
-                        <Pencil size={16} />
+                {(role === 'admin' || role === 'staff') && (
+                  <>
+                    <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                    {role === 'admin' && (
+                      <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800">
+                        <Trash2 size={16} />
                       </button>
-                      {role === 'admin' && (
-                        <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800">
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </>
-                  )}
-                  <button
-  onClick={() => {
-    const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
-    if (!sourceCanvas) return alert('QR Code not found');
+                    )}
+                  </>
+                )}
 
-    const qrSize = 1024;
-    const labelHeight = 160;
-    const padding = 40;
-    const canvas = document.createElement('canvas');
-    canvas.width = qrSize + padding * 2;
-    canvas.height = qrSize + labelHeight + padding * 2;
+                {/* Tombol download QR satuan */}
+                <button
+                  onClick={() => {
+                    const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
+                    if (!sourceCanvas) return alert('QR Code not found');
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+                    const qrSize = 1024;
+                    const labelHeight = 160;
+                    const padding = 40;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = qrSize + padding * 2;
+                    canvas.height = qrSize + labelHeight + padding * 2;
 
-    // Background putih
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
 
-    // Border luar
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Gambar QR
-    ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-    // Text
-    ctx.fillStyle = '#000000';
-    ctx.textAlign = 'center';
+                    ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
 
-    ctx.font = 'bold 48px Arial';
-    ctx.fillText(a.item_name, canvas.width / 2, qrSize + padding + 70);
+                    ctx.fillStyle = '#000000';
+                    ctx.textAlign = 'center';
 
-    ctx.font = '36px Arial';
-    ctx.fillText(`ID: ${a.id}`, canvas.width / 2, qrSize + padding + 120);
+                    ctx.font = 'bold 48px Arial';
+                    ctx.fillText(a.item_name, canvas.width / 2, qrSize + padding + 70);
 
-    // Download
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
-    const safeName = a.item_name.replace(/[\\/:*?"<>|]/g, '-'); // hindari karakter ilegal
-    link.download = `QR-${safeName}.png`;
-    link.click();
-  }}
-  className="text-green-600 hover:text-green-800"
->
-  <Download size={16} />
-</button>
-<QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} className="hidden" />
+                    ctx.font = '36px Arial';
+                    ctx.fillText(`ID: ${a.id}`, canvas.width / 2, qrSize + padding + 120);
 
-                </td>
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png');
+                    const safeName = a.item_name.replace(/[\\/:*?"<>|]/g, '-');
+                    link.download = `QR-${safeName}.png`;
+                    link.click();
+                  }}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  <Download size={16} />
+                </button>
+
+                {/* Hidden QR canvas untuk download satuan */}
+                <QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} className="hidden" />
+
+                {/* Hidden QR canvas untuk download massal */}
+                <QRCodeCanvas id={`qr-${a.id}`} value={a.qr_value} size={1024} className="hidden" />
+              </td>
+
               </tr>
             ))}
           </tbody>
@@ -343,6 +379,27 @@ export default function ItAssetList() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Kolom kiri */}
           <div className="space-y-3">
+            {/* Select Company */}
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Company</label>
+              <select
+                value={form.company || ''}
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+                className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="">Pilih Company</option>
+                <option value="Gesit Alumas">Gesit Alumas</option>
+                <option value="Gesit Perkasa">Gesit Perkasa</option>
+                <option value="Sircon Investment">Sircon Investment</option>
+                <option value="Alakasa Industrindo">Alakasa Industrindo</option>
+                <option value="Gesit Graha">Gesit Graha</option>
+                <option value="Dharma Alumas Sakti">Dharma Alumas Sakti</option>
+                <option value="Dinamika Sejahtera Mandiri">Dinamika Sejahtera Mandiri</option>
+                <option value="Gesit Intrade">Gesit Intrade</option>
+              </select>
+            </div>
+
+            {/* Input kiri */}
             {[
               { label: 'Item Name', key: 'item_name' },
               { label: 'Brand', key: 'brand' },
@@ -353,7 +410,7 @@ export default function ItAssetList() {
                 <label className="block text-sm text-gray-700 mb-1">{label}</label>
                 <input
                   type="text"
-                  value={(form as any)[key]}
+                  value={(form as Record<string, string>)[key] || ''}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
@@ -363,10 +420,11 @@ export default function ItAssetList() {
 
           {/* Kolom kanan */}
           <div className="space-y-3">
+            {/* Select Category */}
             <div>
               <label className="block text-sm text-gray-700 mb-1">Category</label>
               <select
-                value={form.category}
+                value={form.category || ''}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
@@ -386,16 +444,19 @@ export default function ItAssetList() {
                 <option value="Other">Other</option>
               </select>
             </div>
+
+            {/* Input kanan */}
             {[
               { label: 'Location', key: 'location' },
               { label: 'User Assigned', key: 'user_assigned' },
-              { label: 'Remarks', key: 'remarks' }
+              { label: 'Remarks', key: 'remarks' },
+              { label: 'Department', key: 'department' }
             ].map(({ label, key }) => (
               <div key={key}>
                 <label className="block text-sm text-gray-700 mb-1">{label}</label>
                 <input
                   type="text"
-                  value={(form as any)[key]}
+                  value={(form as Record<string, string>)[key] || ''}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
@@ -404,7 +465,7 @@ export default function ItAssetList() {
           </div>
         </div>
 
-        {/* Optional Field (Laptop/PC only) */}
+        {/* Optional fields jika Laptop/PC */}
         {isLaptopOrPC && (
           <>
             <hr className="my-6 border-gray-300" />
@@ -420,7 +481,7 @@ export default function ItAssetList() {
                   <label className="block text-sm text-gray-700 mb-1">{label}</label>
                   <input
                     type="text"
-                    value={(form as any)[key]}
+                    value={(form as Record<string, string>)[key] || ''}
                     onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                     className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
@@ -443,6 +504,7 @@ export default function ItAssetList() {
     </Dialog.Panel>
   </div>
 </Dialog>
+
 
     </div>
   );

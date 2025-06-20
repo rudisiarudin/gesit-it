@@ -1,134 +1,140 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import ActivityForm, { FormData } from './ActivityForm';
-import ExportButtons from './ExportButtons';
-import ActivityTable from './ActivityTable';
-import ActivityFilter from './ActivityFilter';
-import { Activity } from '@/types/activity';
+import ActivityTable from '@/components/ActivityLog/ActivityTable';
+import ActivityForm from '@/components/ActivityLog/ActivityForm';
+import ActivityDetailModal from '@/components/ActivityLog/ActivityDetailModal';
+import ExportButtons from '@/components/ActivityLog/ExportButtons';
+import Pagination from '@/components/Pagination'; // Pastikan path benar
+import { Filter, X } from 'lucide-react';
+import { Activity, FormData } from '@/components/ActivityLog/types';
+
+const initialForm: FormData = {
+  activity_name: '',
+  location: '',
+  user: '',
+  it: '',
+  type: '',
+  category: '',
+  remarks: '',
+  status: 'Pending',
+  duration: '',
+  updated_at: '',
+};
 
 export default function ActivityLogPage() {
-  const router = useRouter();
+  const [rawActivities, setRawActivities] = useState<Activity[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [dateFilter, setDateFilter] = useState({ from: '', to: '' });
+  const [formData, setFormData] = useState<FormData>(initialForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false); // 🛡️ Tambahan auth
+  const [showForm, setShowForm] = useState(false);
+  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [role, setRole] = useState<string>('user'); // default user
+  const [userIt, setUserIt] = useState<string>(''); // user IT name from session
 
-  const initialFormData: FormData = {
-    activity_name: '',
-    location: '',
-    user: '',
-    it: '',
-    type: '',
-    category: '',
-    remarks: '',
-    status: '',
-  };
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-
-  // ✅ Cek session saat mount
+  // Ambil session & user role, user IT name
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/login');
-      } else {
-        setSessionChecked(true);
-        fetchActivities();
-      }
-    };
-    checkSession();
+    supabase.auth.getSession().then(({ data }) => {
+      const sessionUser = data.session?.user;
+      const userRole = sessionUser?.user_metadata?.role || 'user';
+      setRole(userRole);
+
+      // Ambil user IT dari user_metadata.full_name atau email fallback
+      const fullName = sessionUser?.user_metadata?.full_name;
+      setUserIt(fullName ?? sessionUser?.email ?? '');
+    });
   }, []);
 
-  const fetchActivities = async () => {
-    let query = supabase
-      .from('activities')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (dateFilter.from) {
-      query = query.gte('created_at', `${dateFilter.from}T00:00:00`);
-    }
-    if (dateFilter.to) {
-      query = query.lte('created_at', `${dateFilter.to}T23:59:59`);
-    }
-
-    const { data, error } = await query;
-    if (!error && data) {
-      setActivities(data);
-    }
-  };
-
+  // Fetch activities & realtime subscribe
   useEffect(() => {
-    if (sessionChecked) {
-      fetchActivities();
+    async function fetchActivities() {
+      const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) setRawActivities(data as Activity[]);
     }
-  }, [dateFilter]);
+    fetchActivities();
 
-  const calculateDuration = (created: string, updated: string) => {
-    const start = new Date(created).getTime();
-    const end = new Date(updated).getTime();
-    const totalMinutes = Math.floor((end - start) / (1000 * 60));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
+    const channel = supabase
+      .channel('realtime:activities')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'activities' },
+        (payload) => {
+          const { eventType, new: newRow, old: oldRow } = payload;
+          setRawActivities((prev) => {
+            let updated = [...prev];
+            if (eventType === 'INSERT') updated = [newRow as Activity, ...updated];
+            else if (eventType === 'UPDATE')
+              updated = updated.map((a) =>
+                a.id === (newRow as Activity).id ? (newRow as Activity) : a
+              );
+            else if (eventType === 'DELETE')
+              updated = updated.filter((a) => a.id !== (oldRow as Activity).id);
+            return updated;
+          });
+        }
+      )
+      .subscribe();
 
-    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-    if (hours > 0) return `${hours}h`;
-    return `${minutes}m`;
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  // Filter & search activities
+  useEffect(() => {
+    let filtered = [...rawActivities];
 
-    try {
-      const now = new Date().toISOString();
-      const isCompleted = formData.status === 'Completed';
-
-      const updated_at = now;
-      const created_at = editingActivity?.created_at || now;
-      let duration;
-
-      if (isCompleted) {
-        duration = calculateDuration(created_at, updated_at);
-      }
-
-      const {
-        created_at: _omitCreatedAt,
-        ...payloadForm
-      } = formData;
-
-      const payload = {
-        ...payloadForm,
-        updated_at,
-        ...(duration ? { duration } : {}),
-      };
-
-      if (editingActivity) {
-        await supabase.from('activities').update(payload).eq('id', editingActivity.id);
-      } else {
-        await supabase.from('activities').insert({
-          ...payload,
-          created_at,
-        });
-      }
-
-      fetchActivities();
-      setShowForm(false);
-      setEditingActivity(null);
-      setFormData(initialFormData);
-    } finally {
-      setLoading(false);
+    if (filterDateFrom)
+      filtered = filtered.filter(
+        (a) => new Date(a.created_at) >= new Date(`${filterDateFrom}T00:00:00`)
+      );
+    if (filterDateTo)
+      filtered = filtered.filter(
+        (a) => new Date(a.created_at) <= new Date(`${filterDateTo}T23:59:59`)
+      );
+    if (filterStatus) filtered = filtered.filter((a) => a.status === filterStatus);
+    if (searchKeyword.trim()) {
+      const keyword = searchKeyword.toLowerCase();
+      filtered = filtered.filter((a) =>
+        Object.values(a)
+          .join(' ')
+          .toLowerCase()
+          .includes(keyword)
+      );
     }
-  };
 
+    setActivities(filtered);
+  }, [rawActivities, filterDateFrom, filterDateTo, filterStatus, searchKeyword]);
+
+  // Reset current page jika activities berubah (filter/search)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activities]);
+
+  // Pagination slice
+  const totalPages = Math.ceil(activities.length / itemsPerPage);
+  const pagedActivities = activities.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Handle edit
   const handleEdit = (activity: Activity) => {
-    setEditingActivity(activity);
+    if (activity.status === 'Completed') return;
     setFormData({
       activity_name: activity.activity_name,
       location: activity.location,
@@ -138,69 +144,193 @@ export default function ActivityLogPage() {
       category: activity.category,
       remarks: activity.remarks,
       status: activity.status,
-      duration: activity.duration,
-      updated_at: activity.updated_at,
+      duration: activity.duration ?? '',
+      updated_at: activity.updated_at ?? '',
     });
+    setEditingId(activity.id);
     setShowForm(true);
   };
 
-  const handleDelete = async (id: number) => {
-    await supabase.from('activities').delete().eq('id', id);
-    fetchActivities();
+  // Handle delete
+  const handleDelete = async (activity: Activity) => {
+    if (role !== 'admin') {
+      alert('You do not have permission to delete activities.');
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete "${activity.activity_name}"?`)) return;
+
+    try {
+      const { error } = await supabase.from('activities').delete().eq('id', activity.id);
+      if (error) throw error;
+      alert('Activity deleted successfully.');
+    } catch (error) {
+      alert('Failed to delete activity: ' + (error as Error).message);
+    }
   };
 
-  // 🛡️ Tampilkan loader saat session dicek
-  if (!sessionChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Mengecek sesi login...</p>
-      </div>
-    );
-  }
+  // Submit form
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const updatedData: Partial<FormData> = { ...formData };
+
+    if (formData.status === 'Completed') {
+      const nowIso = new Date().toISOString();
+      updatedData.updated_at = nowIso;
+
+      if (editingId) {
+        const existing = rawActivities.find((a) => a.id === editingId);
+        if (existing) {
+          const start = new Date(existing.created_at);
+          const end = new Date(nowIso);
+          const diffMs = end.getTime() - start.getTime();
+          const hours = Math.floor(diffMs / (1000 * 60 * 60));
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          updatedData.duration = `${hours}h ${minutes}m`;
+        }
+      }
+    }
+
+    try {
+      if (editingId) {
+        const { error } = await supabase
+          .from('activities')
+          .update(updatedData)
+          .eq('id', editingId);
+        if (error) throw error;
+        setEditingId(null);
+      } else {
+        // Buang properti kosong supaya tidak error insert
+        const cleanedData = Object.fromEntries(
+          Object.entries(updatedData).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+        );
+        const { error } = await supabase.from('activities').insert([cleanedData]);
+        if (error) throw error;
+      }
+      setFormData(initialForm);
+      setShowForm(false);
+    } catch (error) {
+      alert('Failed to save activity: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
-        <h1 className="text-xl font-semibold">Activity Log</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <ActivityFilter
-            dateFilter={dateFilter}
-            setDateFilter={setDateFilter}
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl font-bold">IT Activity Log</h1>
+
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Search */}
+          <input
+            type="text"
+            placeholder="Search activity..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            className="border px-3 py-1 rounded w-full md:w-52 text-sm"
           />
-          <ExportButtons
-            data={activities}
-            onAdd={() => {
-              setEditingActivity(null);
-              setFormData(initialFormData);
+
+          {/* Toggle Filter */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-1 px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 border text-sm"
+            aria-label={showFilters ? 'Close filter panel' : 'Open filter panel'}
+          >
+            {showFilters ? <X className="w-4 h-4" /> : <Filter className="w-4 h-4" />}
+            {showFilters ? 'Close Filter' : 'Filter'}
+          </button>
+
+          {/* Export Buttons */}
+          <ExportButtons activities={activities} />
+
+          {/* Add Activity */}
+          <button
+            onClick={() => {
               setShowForm(true);
+              setEditingId(null);
+              setFormData({ ...initialForm, it: userIt });
             }}
-          />
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow text-sm"
+            aria-label="Add new activity"
+          >
+            + Add
+          </button>
         </div>
       </div>
 
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="p-4 border rounded-md shadow bg-white space-y-2">
+          <div className="flex flex-wrap gap-4">
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="border p-2 rounded"
+              aria-label="Filter from date"
+            />
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="border p-2 rounded"
+              aria-label="Filter to date"
+            />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="border p-2 rounded"
+              aria-label="Filter by status"
+            >
+              <option value="">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="On Progress">On Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Form Modal */}
+      {showForm && (
+        <ActivityForm
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingId(null);
+            setFormData(initialForm);
+          }}
+          loading={loading}
+          editingId={editingId}
+          userIt={userIt}
+        />
+      )}
+
+      {/* Activity Table */}
       <ActivityTable
-        data={activities}
+        activities={pagedActivities}
+        role={role}
         onEdit={handleEdit}
+        onView={(activity) => setViewingActivity(activity)}
         onDelete={handleDelete}
       />
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 px-2">
-          <div className="bg-white w-full max-w-2xl rounded-lg shadow-xl p-6 overflow-auto max-h-[90vh]">
-            <ActivityForm
-              formData={formData}
-              setFormData={setFormData}
-              handleSubmit={handleSubmit}
-              loading={loading}
-              editingId={editingActivity?.id ?? null}
-              onCancel={() => {
-                setShowForm(false);
-                setEditingActivity(null);
-                setFormData(initialFormData);
-              }}
-            />
-          </div>
-        </div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
+      )}
+
+      {/* Detail Modal */}
+      {viewingActivity && (
+        <ActivityDetailModal activity={viewingActivity} onClose={() => setViewingActivity(null)} />
       )}
     </div>
   );
