@@ -3,15 +3,22 @@
 import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import {
-  Home, List, Calendar, ShoppingCart, Menu, X, User, LogOut, Cpu, Package, Users
+  Home,
+  List,
+  Calendar,
+  ShoppingCart,
+  Menu,
+  X,
+  User,
+  LogOut,
+  Cpu,
+  Package,
+  Users,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
-
-
-
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -75,7 +82,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] flex">
+    <div className="min-h-screen bg-[#f8f9fa] flex flex-col">
       {/* Sidebar */}
       <aside
         className={clsx(
@@ -84,10 +91,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         )}
       >
         <div className="flex items-center justify-between px-6 h-16 border-b">
-         <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="Logo" width={32} height={32} />
-          <span className="text-lg font-bold text-slate-800">IT Gesit</span>
-        </div>
+          <div className="flex items-center gap-2">
+            <Image src="/logo.png" alt="Logo" width={32} height={32} />
+            <span className="text-lg font-bold text-slate-800">IT Gesit</span>
+          </div>
 
           <button
             className="md:hidden text-gray-600"
@@ -125,7 +132,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         />
       )}
 
-      {/* Content */}
+      {/* Content + footer wrapper */}
       <div className="flex-1 flex flex-col min-h-screen pl-0 md:pl-64">
         <header className="h-16 bg-white border-b px-4 md:px-6 flex items-center justify-between shadow-sm">
           <button
@@ -144,7 +151,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <div className="w-9 h-9 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-semibold">
                 {userInitials}
               </div>
-              <span className="hidden md:block text-sm font-medium text-gray-800">{userName}</span>
+              <span className="hidden md:block text-sm font-medium text-gray-800">
+                {userName}
+              </span>
             </button>
             {userMenuOpen && (
               <div className="absolute right-0 mt-2 w-44 bg-white border rounded-md shadow-lg z-50">
@@ -167,6 +176,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </header>
 
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">{children}</main>
+
+        {/* Footer */}
+        <footer className="h-12 bg-white border-t text-center text-gray-600 text-xs flex items-center justify-center select-none">
+          &copy; {new Date().getFullYear()} IT Gesit. All rights reserved.
+        </footer>
       </div>
     </div>
   );
