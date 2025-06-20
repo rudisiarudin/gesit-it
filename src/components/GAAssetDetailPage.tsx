@@ -3,16 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { QRCodeCanvas } from 'qrcode.react';
 import {
-  BadgeCheck,
-  MapPin,
-  Tag,
-  Package,
-  Hash,
-  User,
-  StickyNote,
-  Settings
+  BadgeCheck, MapPin, Tag, Hash, User, StickyNote, Settings
 } from 'lucide-react';
 
 interface GAAsset {
@@ -25,7 +17,6 @@ interface GAAsset {
   location: string;
   user_assigned: string;
   remarks: string;
-  qr_value: string;
 }
 
 export default function GAAssetDetailPage() {
@@ -59,24 +50,18 @@ export default function GAAssetDetailPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+      {/* Judul luar */}
+      <h1 className="text-3xl font-bold text-gray-800 text-center">GA Asset Detail</h1>
+
       <div className="bg-white rounded-xl shadow-md p-6 space-y-6 border border-gray-200">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-gray-800">GA Asset Detail</h1>
-          <p className="text-gray-600 text-sm">
-            Item Name: <span className="font-semibold">{asset.item_name}</span>
-          </p>
+        {/* Judul dalam card */}
+        <div className="text-center space-y-1">
+          <p className="text-xl font-semibold text-gray-800">{asset.item_name}</p>
+          <p className="text-sm text-gray-500 font-mono">ID: {asset.id}</p>
         </div>
 
-        <div className="flex flex-col items-center space-y-2">
-          <div className="p-4 border rounded-lg shadow-sm">
-            <QRCodeCanvas value={asset.qr_value} size={160} />
-          </div>
-          <p className="text-gray-600 text-sm">
-            ID: <span className="font-semibold">{asset.id}</span>
-          </p>
-        </div>
-
+        {/* Detail informasi */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <DetailItem icon={<User size={16} />} label="User Assigned" value={asset.user_assigned} />
           <DetailItem icon={<Tag size={16} />} label="Category" value={asset.category} />
