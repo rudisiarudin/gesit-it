@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Toast from '@/components/Toast';
+import { AlertCircle } from 'lucide-react';
 
 type UserProfile = {
   id: string;
@@ -10,32 +12,55 @@ type UserProfile = {
   username: string;
   full_name: string;
   role: string;
+  groups?: string[];
   is_active?: boolean;
 };
 
 export default function UserManagementPage() {
+  const router = useRouter();
+
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        router.replace('/login');
+        return;
+      }
+
+      const role = data.user.user_metadata?.role || null;
+
+      if (role === 'admin') {
+        setAuthorized(true);
+        fetchUsers();
+      } else {
+        setAuthorized(false);
+        setTimeout(() => {
+          router.replace('/dashboard');
+        }, 1500);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
   const fetchUsers = async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('id, email, username, full_name, role, is_active');
-
+      .select('id, email, username, full_name, role, groups, is_active');
     if (!error && data) setUsers(data);
     setLoading(false);
   };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
 
   const updateRole = async (id: string, newRole: string) => {
     const { error } = await supabase
@@ -76,6 +101,20 @@ export default function UserManagementPage() {
     }
   };
 
+  const updateGroups = async (id: string, newGroups: string[]) => {
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ groups: newGroups })
+      .eq('id', id);
+
+    if (!error) {
+      setUsers(users.map(user => user.id === id ? { ...user, groups: newGroups } : user));
+      showToast('Groups updated.', 'success');
+    } else {
+      showToast('Failed to update groups.', 'error');
+    }
+  };
+
   const disableUser = async (id: string) => {
     const confirmed = window.confirm("Are you sure you want to disable this user?");
     if (!confirmed) return;
@@ -105,11 +144,19 @@ export default function UserManagementPage() {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(search.toLowerCase()) ||
-    user.username.toLowerCase().includes(search.toLowerCase()) ||
-    user.full_name.toLowerCase().includes(search.toLowerCase())
-  );
+  if (authorized === null) {
+    return <p>Checking authorization...</p>;
+  }
+
+  if (authorized === false) {
+    return (
+     <div className="p-6 text-center text-red-600 flex flex-col items-center gap-3">
+      <AlertCircle size={48} className="mx-auto" />
+      <p className="font-bold text-lg">You do not have permission to access this page.</p>
+      <p className="font-semibold">Redirecting...</p>
+    </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -123,14 +170,6 @@ export default function UserManagementPage() {
 
       <h1 className="text-2xl font-bold mb-4">User Management</h1>
 
-      <input
-        type="text"
-        placeholder="Search by email, name, or username..."
-        className="mb-4 p-2 border rounded w-full max-w-sm"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
       {loading ? (
         <p>Loading users...</p>
       ) : (
@@ -142,13 +181,21 @@ export default function UserManagementPage() {
                 <th className="p-3">Username</th>
                 <th className="p-3">Full Name</th>
                 <th className="p-3">Role</th>
+                <th className="p-3">Groups</th>
                 <th className="p-3">Status</th>
                 <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="border-t">
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-center py-4 text-gray-500">
+                    No users found.
+                  </td>
+                </tr>
+              )}
+              {users.map(user => (
+                <tr key={user.id} className="border-t align-top">
                   <td className="p-3">{user.email}</td>
                   <td className="p-3">{user.username}</td>
                   <td className="p-3">
@@ -168,6 +215,9 @@ export default function UserManagementPage() {
                       <option value="staff">Staff</option>
                       <option value="user">User</option>
                     </select>
+                  </td>
+                  <td className="p-3">
+                    {user.groups?.join(', ') || '-'}
                   </td>
                   <td className="p-3">
                     {user.is_active === false ? (
@@ -193,13 +243,6 @@ export default function UserManagementPage() {
                   </td>
                 </tr>
               ))}
-              {filteredUsers.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-4 text-gray-500">
-                    No users found.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
