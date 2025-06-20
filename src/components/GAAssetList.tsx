@@ -202,62 +202,69 @@ export default function GAAssetList() {
                 <td className="p-2">{a.location}</td>
                 <td className="p-2">{a.user_assigned}</td>
                 <td className="p-2 flex gap-2 items-center">
-                  {(role === 'admin' || role === 'staff') && (
-                    <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800">
-                      <Pencil size={16} />
-                    </button>
-                  )}
-                  {role === 'admin' && (
-                    <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800">
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
-                      if (!sourceCanvas) return alert('QR Code not found');
-
-                      const qrSize = 1024;
-                      const labelHeight = 160;
-                      const padding = 40;
-                      const canvas = document.createElement('canvas');
-                      canvas.width = qrSize + padding * 2;
-                      canvas.height = qrSize + labelHeight + padding * 2;
-
-                      const ctx = canvas.getContext('2d');
-                      if (!ctx) return;
-
-                      ctx.fillStyle = '#ffffff';
-                      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                      ctx.strokeStyle = '#000000';
-                      ctx.lineWidth = 4;
-                      ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-                      ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
-
-                      ctx.fillStyle = '#000000';
-                      ctx.textAlign = 'center';
-
-                      ctx.font = 'bold 48px Arial';
-                      ctx.fillText(a.item_name, canvas.width / 2, qrSize + padding + 70);
-
-                      ctx.font = '36px Arial';
-                      ctx.fillText(`ID: ${a.id}`, canvas.width / 2, qrSize + padding + 120);
-
-                      const link = document.createElement('a');
-                      link.href = canvas.toDataURL('image/png');
-                      link.download = `QR-${a.item_name}.png`;
-                      link.click();
-                    }}
-                    className="text-green-600 hover:text-green-800"
-                  >
-                    <Download size={16} />
-                    <div className="hidden">
-                      <QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} />
-                    </div>
+                {(role === 'admin' || role === 'staff') && (
+                  <button onClick={() => handleEdit(a)} className="text-blue-600 hover:text-blue-800">
+                    <Pencil size={16} />
                   </button>
-                </td>
+                )}
+                {role === 'admin' && (
+                  <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800">
+                    <Trash2 size={16} />
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
+                    if (!sourceCanvas) return alert('QR Code not found');
+
+                    const qrSize = 1024;
+                    const labelHeight = 160;
+                    const padding = 40;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = qrSize + padding * 2;
+                    canvas.height = qrSize + labelHeight + padding * 2;
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
+
+                    ctx.fillStyle = '#000000';
+                    ctx.textAlign = 'center';
+
+                    ctx.font = 'bold 48px Arial';
+                    ctx.fillText(a.item_name, canvas.width / 2, qrSize + padding + 70);
+
+                    ctx.font = '36px Arial';
+                    ctx.fillText(`ID: ${a.id}`, canvas.width / 2, qrSize + padding + 120);
+
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png');
+                    link.download = `QR-${a.item_name}.png`;
+                    link.click();
+                  }}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  <Download size={16} />
+                  {/* QR untuk download satuan */}
+                  <div className="hidden">
+                    <QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} />
+                  </div>
+                </button>
+
+                {/* QR untuk download semua (harus ID-nya qr-{id}) */}
+                <div className="hidden">
+                  <QRCodeCanvas id={`qr-${a.id}`} value={a.qr_value} size={1024} />
+                </div>
+              </td>
+
               </tr>
             ))}
           </tbody>
