@@ -3,7 +3,7 @@
 import React from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { Archive } from 'lucide-react'; // ⬅️ Tambahkan ini
+import { Archive } from 'lucide-react';
 
 type Asset = {
   id: string;
@@ -13,9 +13,10 @@ type Asset = {
 
 type Props = {
   assets: Asset[];
+  tooltip?: string; // Opsional, untuk title hover
 };
 
-const DownloadAllQRButton: React.FC<Props> = ({ assets }) => {
+const DownloadAllQRButton: React.FC<Props> = ({ assets, tooltip = 'Download All QR Codes' }) => {
   const handleDownloadAllQR = async () => {
     const zip = new JSZip();
 
@@ -66,10 +67,10 @@ const DownloadAllQRButton: React.FC<Props> = ({ assets }) => {
   return (
     <button
       onClick={handleDownloadAllQR}
-      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      className="inline-flex items-center justify-center p-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition duration-200"
+      title={tooltip}
     >
-      <Archive size={18} />
-      Download All QR Codes
+      <Archive size={18} strokeWidth={2} />
     </button>
   );
 };

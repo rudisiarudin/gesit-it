@@ -1,0 +1,230 @@
+'use client';
+
+import { Dialog } from '@headlessui/react';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { GAAsset, emptyAssetForm } from '@/components/types';
+
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  fetchAssets: () => void;
+  form: GAAsset;
+  setForm: (f: GAAsset) => void;
+  isEditing: boolean;
+  editId: string | null;
+  userId?: string | null;
+};
+
+export default function GAAssetFormModal({
+  isOpen,
+  onClose,
+  fetchAssets,
+  form,
+  setForm,
+  isEditing,
+  editId,
+  userId = null,
+}: Props) {
+  const [error, setError] = useState('');
+  const safeForm = form || emptyAssetForm;
+
+  const handleImageUpload = async (file: File) => {
+    const ext = file.name.split('.').pop();
+    const filename = `${Date.now()}.${ext}`;
+    const filePath = `ga-assets/${filename}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      alert('Upload failed');
+      return;
+    }
+
+    const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+    setForm({ ...safeForm, image_url: data.publicUrl });
+  };
+
+  const generateId = async (category: string, createdAt: string) => {
+    const [yy, mm, dd] = createdAt.slice(0, 10).split('-');
+    const catCode = category.toUpperCase().slice(0, 2);
+    const { count } = await supabase
+      .from('ga_assets')
+      .select('*', { count: 'exact', head: true })
+      .eq('category', category)
+      .eq('created_at', createdAt);
+    const no = String((count || 0) + 1).padStart(3, '0');
+    return `GA-${dd}${mm}${yy}-${catCode}-${no}`;
+  };
+
+  const handleSubmit = async () => {
+    if (!safeForm.item_name || !safeForm.category || !safeForm.status || !safeForm.location) {
+      setError('Please fill all required fields.');
+      return;
+    }
+
+    setError('');
+    const createdAt = new Date().toISOString();
+
+    if (isEditing && editId) {
+      const qrValue = `${location.origin}/ga-asset?id=${editId}`;
+      const { error: updateError } = await supabase
+        .from('ga_assets')
+        .update({ ...safeForm, qr_value: qrValue })
+        .eq('id', editId);
+
+      if (updateError) {
+        console.error(updateError);
+        setError('Failed to update asset.');
+        return;
+      }
+    } else {
+      const newId = await generateId(safeForm.category, createdAt);
+      const qrValue = `${location.origin}/ga-asset?id=${newId}`;
+
+      const { error: insertError } = await supabase.from('ga_assets').insert([
+        {
+          ...safeForm,
+          id: newId,
+          created_at: createdAt,
+          user_id: userId,
+          qr_value: qrValue,
+        },
+      ]);
+
+      if (insertError) {
+        console.error(insertError);
+        setError('Failed to add asset.');
+        return;
+      }
+    }
+
+    fetchAssets();
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <Dialog.Title className="text-xl font-semibold text-gray-800">
+              {isEditing ? 'Edit Asset' : 'Add Asset'}
+            </Dialog.Title>
+            <button onClick={onClose} className="text-xl font-bold">&times;</button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[ 
+              'item_name', 'brand', 'serial_number', 'status', 'location',
+              'user_assigned', 'remarks', 'department', 'condition',
+            ].map((key) => (
+              <div key={key} className="flex flex-col">
+                <label className="text-sm text-gray-600 mb-1 capitalize">{key.replace('_', ' ')}</label>
+                <input
+                  type="text"
+                  value={(safeForm[key as keyof GAAsset] as string) || ''}
+                  onChange={(e) => setForm({ ...safeForm, [key]: e.target.value })}
+                  className="border px-3 py-2 rounded"
+                />
+              </div>
+            ))}
+
+            <div className="flex flex-col md:col-span-2">
+              <label className="text-sm text-gray-600 mb-1">Category</label>
+              <select
+                value={safeForm.category || ''}
+                onChange={(e) => setForm({ ...safeForm, category: e.target.value })}
+                className="border px-3 py-2 rounded"
+              >
+                <option value="">-- Select Category --</option>
+                <option value="Kendaraan">Kendaraan</option>
+                <option value="Meja">Meja</option>
+                <option value="Kursi">Kursi</option>
+                <option value="Lemari">Lemari</option>
+                <option value="Peralatan Dapur">Peralatan Dapur</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600 mb-1">Purchase Date</label>
+              <input
+                type="date"
+                value={safeForm.purchase_date?.slice(0, 10) || ''}
+                onChange={(e) => setForm({ ...safeForm, purchase_date: e.target.value })}
+                className="border px-3 py-2 rounded"
+              />
+            </div>
+
+            {safeForm.category === 'Kendaraan' && (
+              <>
+                <div className="flex flex-col">
+                  <label className="text-sm">No Plat</label>
+                  <input
+                    type="text"
+                    value={safeForm.no_plate || ''}
+                    onChange={(e) => setForm({ ...safeForm, no_plate: e.target.value })}
+                    className="border px-3 py-2 rounded"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-sm">Jenis Kendaraan</label>
+                  <input
+                    type="text"
+                    value={safeForm.vehicle_type || ''}
+                    onChange={(e) => setForm({ ...safeForm, vehicle_type: e.target.value })}
+                    className="border px-3 py-2 rounded"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-sm">STNK Expiry</label>
+                  <input
+                    type="date"
+                    value={safeForm.stnk_expiry?.slice(0, 10) || ''}
+                    onChange={(e) => setForm({ ...safeForm, stnk_expiry: e.target.value })}
+                    className="border px-3 py-2 rounded"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="md:col-span-2">
+              <label className="text-sm text-gray-600 mb-1">Upload Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file);
+                }}
+              />
+              {safeForm.image_url && (
+                <img
+                  src={safeForm.image_url}
+                  alt="preview"
+                  className="mt-2 max-h-40 rounded border"
+                />
+              )}
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          <div className="flex justify-end gap-2">
+            <button onClick={onClose} className="px-4 py-2 rounded border hover:bg-gray-100">Cancel</button>
+            <button
+              onClick={handleSubmit}
+              className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+            >
+              {isEditing ? 'Update' : 'Add'}
+            </button>
+          </div>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+  );
+}

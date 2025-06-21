@@ -76,76 +76,86 @@ export default function ProfilePage() {
     router.push('/login');
   };
 
-  if (loading) return <div className="p-6 text-gray-500">Loading profile...</div>;
+  if (loading) return <div className="p-6 text-gray-500 text-center">Loading profile...</div>;
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-md border">
+    <div className="max-w-xl mx-auto mt-12 p-8 bg-white rounded-3xl shadow-lg border border-gray-200">
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
 
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">User Profile</h1>
+      <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">
+        Your Profile
+      </h1>
 
-      <div className="space-y-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSave();
+        }}
+        className="space-y-6"
+      >
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
           <input
             type="email"
             value={profile.email}
             disabled
-            className="mt-1 w-full px-4 py-2 bg-gray-100 rounded-lg border border-gray-300 text-sm text-gray-600"
+            className="w-full rounded-xl border border-gray-300 bg-gray-100 px-5 py-3 text-gray-500 text-sm cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Username</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Username</label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="mt-1 w-full px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-xl border border-gray-300 px-5 py-3 text-gray-900 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Enter your username"
+            required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Full Name</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
           <input
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="mt-1 w-full px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-xl border border-gray-300 px-5 py-3 text-gray-900 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Enter your full name"
+            required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Role</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Role</label>
           <input
             type="text"
             value={profile.role}
             disabled
-            className="mt-1 w-full px-4 py-2 bg-gray-100 rounded-lg border border-gray-300 text-sm text-gray-600"
+            className="w-full rounded-xl border border-gray-300 bg-gray-100 px-5 py-3 text-gray-500 text-sm cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
-      </div>
 
-      <div className="flex justify-between mt-6">
-        <button
-          onClick={handleSave}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-5 py-2 rounded-lg transition"
-        >
-          Save Changes
-        </button>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-600 text-white text-sm px-5 py-2 rounded-lg transition"
-        >
-          Logout
-        </button>
-      </div>
+        <div className="flex justify-between gap-4 pt-6">
+          <button
+            type="submit"
+            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold rounded-2xl px-6 py-3 shadow-lg transition-transform active:scale-95"
+          >
+            Save Changes
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex-1 bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500 text-white font-semibold rounded-2xl px-6 py-3 shadow-lg transition-transform active:scale-95"
+          >
+            Logout
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

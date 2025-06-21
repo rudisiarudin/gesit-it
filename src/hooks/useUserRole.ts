@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 export const useUserRole = () => {
   const [role, setRole] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchRole = async () => {

@@ -1,21 +1,21 @@
 'use client';
 
 import * as XLSX from 'xlsx';
-import { Download } from 'lucide-react';
+import { FileSpreadsheet } from 'lucide-react';
 
-interface ExportToExcelButtonProps {
+interface ExportToExcelIconButtonProps {
   data: any[];
   fileName?: string;
-  buttonLabel?: string;
   columns?: string[];
+  tooltip?: string;
 }
 
-export default function ExportToExcelButton({
+export default function ExportToExcelIconButton({
   data,
   fileName = 'Export',
-  buttonLabel = 'Export to Excel',
   columns,
-}: ExportToExcelButtonProps) {
+  tooltip = 'Export to Excel',
+}: ExportToExcelIconButtonProps) {
   const handleExport = () => {
     const exportData = columns
       ? data.map((row) =>
@@ -35,10 +35,10 @@ export default function ExportToExcelButton({
   return (
     <button
       onClick={handleExport}
-      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+      className="inline-flex items-center justify-center p-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 hover:text-green-700 transition duration-200"
+      title={tooltip}
     >
-      <Download size={16} />
-      {buttonLabel}
+      <FileSpreadsheet size={18} strokeWidth={2} />
     </button>
   );
 }

@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
   Tag, BadgeCheck, Hash, Settings, MapPin, User, StickyNote,
-  Cpu, HardDrive, MemoryStick, MonitorSmartphone, Building2, Users,
+  Cpu, HardDrive, MemoryStick, MonitorSmartphone, Building2, Users, CalendarDays, QrCode,
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface Asset {
   id: string;
@@ -17,13 +18,15 @@ interface Asset {
   status: string;
   location: string;
   user_assigned: string;
-  remarks: string;
+  remarks?: string;
+  processor?: string;
   storage?: string;
   ram?: string;
   vga?: string;
-  processor?: string;
+  qr_value?: string;
   company?: string;
   department?: string;
+  purchase_date?: string;
 }
 
 export default function AssetDetailClient() {
@@ -43,6 +46,7 @@ export default function AssetDetailClient() {
       .select('*')
       .eq('id', id)
       .single();
+
     if (error) {
       console.error('Error fetching asset:', error);
       setAsset(null);
@@ -72,11 +76,9 @@ export default function AssetDetailClient() {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
-      {/* Judul luar */}
       <h1 className="text-3xl font-bold text-gray-800 text-center">IT Asset Detail</h1>
 
       <div className="bg-white rounded-xl shadow-md p-6 space-y-6 border border-gray-200">
-        {/* Judul dalam card */}
         <div className="text-center space-y-1">
           <p className="text-xl font-semibold text-gray-800">{asset.item_name}</p>
           <p className="text-sm text-gray-500 font-mono">ID: {asset.id}</p>
@@ -91,8 +93,10 @@ export default function AssetDetailClient() {
           <DetailItem icon={<MapPin size={16} />} label="Location" value={asset.location} />
           <DetailItem icon={<Building2 size={16} />} label="Company" value={asset.company || '-'} />
           <DetailItem icon={<Users size={16} />} label="Department" value={asset.department || '-'} />
+          <DetailItem icon={<CalendarDays size={16} />} label="Purchase Date" value={formatDate(asset.purchase_date)} />
+          <DetailItem icon={<QrCode size={16} />} label="QR Value" value={asset.qr_value || '-'} />
           <div className="col-span-1 md:col-span-2">
-            <DetailItem icon={<StickyNote size={16} />} label="Remarks" value={asset.remarks} />
+            <DetailItem icon={<StickyNote size={16} />} label="Remarks" value={asset.remarks || '-'} />
           </div>
 
           {isLaptopOrPC && (
@@ -127,4 +131,13 @@ function DetailItem({
       </div>
     </div>
   );
+}
+
+function formatDate(dateStr?: string) {
+  if (!dateStr) return '-';
+  try {
+    return format(new Date(dateStr), 'dd MMM yyyy');
+  } catch {
+    return '-';
+  }
 }

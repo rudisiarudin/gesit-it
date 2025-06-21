@@ -186,27 +186,62 @@ export default function PurchasePlanPage() {
               {editId ? 'Edit' : 'Add'} Purchase Plan
             </Dialog.Title>
             <div className="space-y-3">
-              <input type="text" placeholder="Item Name" value={form.item_name}
-                onChange={(e) => setForm({ ...form, item_name: e.target.value })}
-                className="w-full border p-2 rounded" />
-              <input type="number" placeholder="Qty" value={form.qty}
-                onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
-                className="w-full border p-2 rounded" />
-              <input type="text" placeholder="Satuan" value={form.unit}
-                onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                className="w-full border p-2 rounded" />
-              <input type="date" value={form.needed_by}
-                onChange={(e) => setForm({ ...form, needed_by: e.target.value })}
-                className="w-full border p-2 rounded" />
-              <input type="number" placeholder="Estimasi Harga" value={form.estimated_price}
-                onChange={(e) => setForm({ ...form, estimated_price: Number(e.target.value) })}
-                className="w-full border p-2 rounded" />
-              <input type="text" placeholder="Status" value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full border p-2 rounded" />
-              <input type="text" placeholder="Remarks" value={form.remarks}
-                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                className="w-full border p-2 rounded" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Item Name</label>
+                <input type="text" value={form.item_name}
+                  onChange={(e) => setForm({ ...form, item_name: e.target.value })}
+                  className="w-full border p-2 rounded" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Quantity</label>
+                <input type="number" value={form.qty}
+                  onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
+                  className="w-full border p-2 rounded" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Satuan</label>
+                <input type="text" value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  className="w-full border p-2 rounded" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Needed By</label>
+                <input type="date" value={form.needed_by}
+                  onChange={(e) => setForm({ ...form, needed_by: e.target.value })}
+                  className="w-full border p-2 rounded" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Estimasi Harga (Rp)</label>
+                <input
+                  type="text"
+                  value={form.estimated_price.toLocaleString('id-ID')}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\./g, '');
+                    const value = parseInt(raw) || 0;
+                    setForm({ ...form, estimated_price: value });
+                  }}
+                  className="w-full border p-2 rounded"
+                  inputMode="numeric"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Status</label>
+                <input type="text" value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  className="w-full border p-2 rounded" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Remarks</label>
+                <input type="text" value={form.remarks}
+                  onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                  className="w-full border p-2 rounded" />
+              </div>
 
               <div className="flex justify-end gap-2 pt-4">
                 <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm">
@@ -223,6 +258,7 @@ export default function PurchasePlanPage() {
               </div>
             </div>
           </Dialog.Panel>
+
         </div>
       </Dialog>
     </div>
