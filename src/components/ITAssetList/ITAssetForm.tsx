@@ -119,11 +119,14 @@ export default function ITAssetForm({
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      {/* Overlay */}
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
+
+      {/* Modal Panel */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-3xl bg-white rounded-xl shadow-xl p-6 space-y-6">
+        <Dialog.Panel className="w-full max-w-3xl bg-white rounded-xl shadow-xl p-4 md:p-6 space-y-6 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center border-b pb-3">
-            <Dialog.Title className="text-xl font-semibold text-gray-800">
+            <Dialog.Title className="text-lg md:text-xl font-semibold text-gray-800">
               {isEditing ? 'Edit Asset' : 'Tambah Asset'}
             </Dialog.Title>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -135,7 +138,7 @@ export default function ITAssetForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Kolom kiri */}
               <div className="space-y-3">
-                <label className="block text-sm text-gray-700 mb-1">Company</label>
+                <label className="block text-sm text-gray-700 mb-1">Company <span className="text-red-500">*</span></label>
                 <select
                   value={form.company || ''}
                   onChange={(e) => setForm({ ...form, company: e.target.value })}
@@ -156,7 +159,7 @@ export default function ITAssetForm({
                   const key = label.toLowerCase().replace(/ /g, '_');
                   return (
                     <div key={key}>
-                      <label className="block text-sm text-gray-700 mb-1">{label}</label>
+                      <label className="block text-sm text-gray-700 mb-1">{label} <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         value={(form as any)[key] || ''}
@@ -167,7 +170,6 @@ export default function ITAssetForm({
                   );
                 })}
 
-                {/* Purchase Date */}
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">Purchase Date</label>
                   <input
@@ -181,7 +183,7 @@ export default function ITAssetForm({
 
               {/* Kolom kanan */}
               <div className="space-y-3">
-                <label className="block text-sm text-gray-700 mb-1">Category</label>
+                <label className="block text-sm text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
                 <select
                   value={form.category || ''}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -207,7 +209,7 @@ export default function ITAssetForm({
                   const key = label.toLowerCase().replace(/ /g, '_');
                   return (
                     <div key={key}>
-                      <label className="block text-sm text-gray-700 mb-1">{label}</label>
+                      <label className="block text-sm text-gray-700 mb-1">{label} <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         value={(form as any)[key] || ''}
@@ -244,7 +246,6 @@ export default function ITAssetForm({
               </>
             )}
 
-            {/* Submit */}
             <div className="mt-6 flex justify-end">
               <button
                 type="submit"
