@@ -4,7 +4,8 @@ import { Dialog } from '@headlessui/react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Asset } from '@/app/dashboard/it-assets/page';
-import { useState } from 'react';
+import AdditionalSpecs from '@/components/ITAssetList/AdditionalSpecs';
+
 
 interface Props {
   isOpen: boolean;
@@ -41,8 +42,7 @@ export default function ITAssetForm({
       company.toLowerCase().includes('dharma') ? 'DAS' :
       company.toLowerCase().includes('dinamika') ? 'DSM' : 'XX';
 
-    const catCode =
-      category.toLowerCase().includes('laptop') ? 'LP' :
+    const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
       category.toLowerCase().includes('pc') ? 'PC' :
       category.toLowerCase().includes('printer') ? 'PR' :
       category.toLowerCase().includes('monitor') ? 'MN' :
@@ -71,11 +71,21 @@ export default function ITAssetForm({
       return;
     }
 
-    const requiredFields = ['item_name', 'category', 'brand', 'serial_number', 'status', 'location', 'user_assigned', 'company', 'department'];
+    const requiredFields = [
+      'item_name',
+      'category',
+      'brand',
+      'serial_number',
+      'status',
+      'location',
+      'user_assigned',
+      'company',
+      'department',
+    ];
 
     const isValid = requiredFields.every((key) => {
-      const value = (form as Record<string, string>)[key];
-      return value && value.trim() !== '';
+      const value = form[key as keyof typeof form];
+      return typeof value === 'string' && value.trim() !== '';
     });
 
     if (!isValid) {
@@ -83,13 +93,37 @@ export default function ITAssetForm({
       return;
     }
 
+    if (isLaptopOrPC) {
+      const specFields = ['storage', 'ram', 'vga', 'processor'];
+      const isSpecValid = specFields.every((key) => {
+        const val = form[key as keyof typeof form];
+        return typeof val === 'string' && val.trim() !== '';
+      });
+
+      if (!isSpecValid) {
+        alert('Harap lengkapi semua spesifikasi tambahan.');
+        return;
+      }
+    }
+
+    const cleanedForm = Object.fromEntries(
+      Object.entries(form).map(([k, v]) => [k, v === '' ? null : v])
+    );
+
     const idToUse = isEditing && editId ? editId : await generateId(form.category, form.company!);
     const qrValue = `${location.origin}/asset?id=${idToUse}`;
+
+    const payload = {
+      ...cleanedForm,
+      id: idToUse,
+      qr_value: qrValue,
+      user_id: userId,
+    };
 
     if (isEditing && editId) {
       const { error } = await supabase
         .from('it_assets')
-        .update({ ...form, qr_value: qrValue })
+        .update(payload)
         .eq('id', editId);
 
       if (error) {
@@ -98,13 +132,9 @@ export default function ITAssetForm({
         return;
       }
     } else {
-      const newId = await generateId(form.category, form.company!);
-      const { error } = await supabase.from('it_assets').insert([{
-        ...form,
-        id: newId,
-        qr_value: qrValue,
-        user_id: userId,
-      }]);
+      const { error } = await supabase
+        .from('it_assets')
+        .insert([payload]);
 
       if (error) {
         console.error('Insert error:', error);
@@ -119,10 +149,7 @@ export default function ITAssetForm({
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      {/* Overlay */}
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
-
-      {/* Modal Panel */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="w-full max-w-3xl bg-white rounded-xl shadow-xl p-4 md:p-6 space-y-6 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center border-b pb-3">
@@ -224,26 +251,7 @@ export default function ITAssetForm({
 
             {/* Spesifikasi Tambahan */}
             {isLaptopOrPC && (
-              <>
-                <hr className="my-6 border-gray-300" />
-                <h3 className="text-base font-medium text-gray-800 mb-2">Spesifikasi Tambahan</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {['Storage', 'RAM', 'VGA', 'Processor'].map((label) => {
-                    const key = label.toLowerCase();
-                    return (
-                      <div key={key}>
-                        <label className="block text-sm text-gray-700 mb-1">{label}</label>
-                        <input
-                          type="text"
-                          value={(form as any)[key] || ''}
-                          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                          className="w-full border rounded-lg p-2 text-sm"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
+              <AdditionalSpecs form={form} setForm={setForm} />
             )}
 
             <div className="mt-6 flex justify-end">
