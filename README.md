@@ -1,41 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GESIT IT - Manajemen Aktivitas & Aset
 
-## Getting Started
+**GESIT IT** adalah aplikasi berbasis web untuk mencatat aktivitas kerja, mengelola aset IT & GA, serta memantau data secara real-time dengan fitur filtering, export, dan QR code.
 
-First, run the development server:
+## ✨ Fitur Utama
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### ✅ Activity Log
+- Tambah/Edit aktivitas kerja harian.
+- Filter berdasarkan tanggal, status, dan kategori.
+- Perhitungan otomatis durasi jika status *Completed*.
+- Export ke **CSV**, **Excel**, dan **PDF**.
+- Role-based access: `admin`, `staff`, `user`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ✅ IT Asset Management
+- CRUD aset IT (Laptop, PC, Printer, dll).
+- QR Code otomatis per item.
+- Filter pencarian & pagination.
+- Export Excel, download QR individu & batch.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ✅ GA Asset Management
+- CRUD aset General Affair (Meja, Kendaraan, dll).
+- ID otomatis berbasis tanggal & kategori: `GA-YYMMDD-KA-001`.
+- Fitur khusus untuk kendaraan: STNK, jenis, nomor plat.
+- Upload gambar & preview dari Supabase Storage.
+- Pencarian, pagination, export & QR.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### ✅ Auth & Role
+- Autentikasi via Supabase Auth.
+- Session check & redirect.
+- Role-based access untuk mengatur hak akses.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🚀 Teknologi
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Next.js 14 / App Router**
+- **Supabase** (Database, Auth, Storage, Realtime)
+- **Tailwind CSS**
+- **Lucide-react** (icon)
+- **xlsx**, **jspdf** (export data)
+- **QRCode.react** (QR Code)
+- **sonner** (toast/alert)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🛠️ Struktur Proyek
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# log-it
-# it-gesit
-# it-gesit
-# gesit-it
-# project
