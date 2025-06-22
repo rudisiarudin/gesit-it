@@ -33,37 +33,53 @@ export default function ITAssetForm({
     form.category?.toLowerCase().includes('pc');
 
   const generateId = async (category: string, company: string) => {
-    const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
-      company.toLowerCase().includes('gesit perkasa') ? 'GP' :
-      company.toLowerCase().includes('sircon') ? 'SI' :
-      company.toLowerCase().includes('alakasa') ? 'AI' :
-      company.toLowerCase().includes('gesit graha') ? 'GG' :
-      company.toLowerCase().includes('gesit intrade') ? 'GI' :
-      company.toLowerCase().includes('dharma') ? 'DAS' :
-      company.toLowerCase().includes('dinamika') ? 'DSM' : 'XX';
+  const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
+    company.toLowerCase().includes('gesit perkasa') ? 'GP' :
+    company.toLowerCase().includes('sircon') ? 'SI' :
+    company.toLowerCase().includes('alakasa') ? 'AI' :
+    company.toLowerCase().includes('gesit graha') ? 'GG' :
+    company.toLowerCase().includes('gesit intrade') ? 'GI' :
+    company.toLowerCase().includes('dharma') ? 'DAS' :
+    company.toLowerCase().includes('dinamika') ? 'DSM' : 'XX';
 
-    const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
-      category.toLowerCase().includes('pc') ? 'PC' :
-      category.toLowerCase().includes('printer') ? 'PR' :
-      category.toLowerCase().includes('monitor') ? 'MN' :
-      category.toLowerCase().includes('proyektor') ? 'PJ' :
-      category.toLowerCase().includes('router') ? 'RT' :
-      category.toLowerCase().includes('harddisk') ? 'HD' :
-      category.toLowerCase().includes('switch') ? 'SW' :
-      category.toLowerCase().includes('access') ? 'AP' :
-      category.toLowerCase().includes('peripherals') ? 'PH' :
-      category.toLowerCase().includes('security') ? 'SC' :
-      category.toLowerCase().includes('tools') ? 'TL' : 'OT';
+  const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
+    category.toLowerCase().includes('pc') ? 'PC' :
+    category.toLowerCase().includes('printer') ? 'PR' :
+    category.toLowerCase().includes('monitor') ? 'MN' :
+    category.toLowerCase().includes('proyektor') ? 'PJ' :
+    category.toLowerCase().includes('router') ? 'RT' :
+    category.toLowerCase().includes('harddisk') ? 'HD' :
+    category.toLowerCase().includes('switch') ? 'SW' :
+    category.toLowerCase().includes('access') ? 'AP' :
+    category.toLowerCase().includes('peripherals') ? 'PH' :
+    category.toLowerCase().includes('security') ? 'SC' :
+    category.toLowerCase().includes('tools') ? 'TL' : 'OT';
 
-    const { count } = await supabase
-      .from('it_assets')
-      .select('*', { count: 'exact', head: true })
-      .eq('category', category)
-      .eq('company', company);
+  const prefix = `${companyCode}-${catCode}-`;
 
-    const serial = String((count || 0) + 1).padStart(3, '0');
-    return `${companyCode}-${catCode}-${serial}`;
-  };
+  const { data, error } = await supabase
+    .from('it_assets')
+    .select('id')
+    .like('id', `${prefix}%`);
+
+  if (error) throw new Error('Gagal mengambil ID');
+
+  // Ambil semua nomor urut yang sudah dipakai
+  const usedNumbers = (data || [])
+    .map((item) => item.id.split('-')[2])
+    .map((num) => parseInt(num, 10))
+    .filter((n) => !isNaN(n));
+
+  // Cari nomor terkecil yang belum dipakai
+  let newNumber = 1;
+  while (usedNumbers.includes(newNumber)) {
+    newNumber++;
+  }
+
+  const newSerial = String(newNumber).padStart(3, '0');
+  return `${prefix}${newSerial}`;
+};
+
 
   const handleSubmit = async () => {
     if (!userId) {
@@ -103,7 +119,16 @@ export default function ITAssetForm({
       Object.entries(form).map(([k, v]) => [k, v === '' ? null : v])
     );
 
-    const idToUse = isEditing && editId ? editId : await generateId(form.category, form.company!);
+    let idToUse = editId;
+    if (!isEditing) {
+      try {
+        idToUse = await generateId(form.category, form.company!);
+      } catch (e: any) {
+        toast.error(e.message || 'Gagal membuat ID.');
+        return;
+      }
+    }
+
     const qrValue = `${location.origin}/asset?id=${idToUse}`;
 
     const payload = {
@@ -113,14 +138,9 @@ export default function ITAssetForm({
       user_id: userId,
     };
 
-    let error;
-    if (isEditing && editId) {
-      const res = await supabase.from('it_assets').update(payload).eq('id', editId);
-      error = res.error;
-    } else {
-      const res = await supabase.from('it_assets').insert([payload]);
-      error = res.error;
-    }
+    const { error } = isEditing
+      ? await supabase.from('it_assets').update(payload).eq('id', editId!)
+      : await supabase.from('it_assets').insert([payload]);
 
     if (error) {
       console.error('Supabase error:', error);
@@ -149,7 +169,7 @@ export default function ITAssetForm({
 
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Kolom kiri */}
+              {/* Kiri */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-700 mb-1">Company <span className="text-red-500">*</span></label>
                 <select
@@ -194,7 +214,7 @@ export default function ITAssetForm({
                 </div>
               </div>
 
-              {/* Kolom kanan */}
+              {/* Kanan */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
                 <select
@@ -235,7 +255,7 @@ export default function ITAssetForm({
               </div>
             </div>
 
-            {/* Spesifikasi Tambahan */}
+            {/* Tambahan spesifikasi */}
             {isLaptopOrPC && <AdditionalSpecs form={form} setForm={setForm} />}
 
             <div className="mt-6 flex justify-end">
