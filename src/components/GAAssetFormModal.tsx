@@ -28,7 +28,6 @@ export default function GAAssetFormModal({
   userId = null,
 }: Props) {
   const [error, setError] = useState('');
-  const safeForm = form || emptyAssetForm;
 
   const sanitizeDate = (val: string | null | undefined) =>
     val && val !== '' ? val : null;
@@ -48,7 +47,7 @@ export default function GAAssetFormModal({
     }
 
     const { data } = supabase.storage.from('images').getPublicUrl(filePath);
-    setForm({ ...safeForm, image_url: data.publicUrl });
+    setForm({ ...form, image_url: data.publicUrl });
   };
 
   const generateId = async (category: string, createdAt: string) => {
@@ -66,7 +65,7 @@ export default function GAAssetFormModal({
   };
 
   const handleSubmit = async () => {
-    if (!safeForm.item_name || !safeForm.category || !safeForm.status || !safeForm.location) {
+    if (!form.item_name || !form.category || !form.status || !form.location) {
       setError('Mohon lengkapi semua field wajib');
       toast.error('Mohon lengkapi semua field wajib');
       return;
@@ -78,9 +77,9 @@ export default function GAAssetFormModal({
       const { error: updateError } = await supabase
         .from('ga_assets')
         .update({
-          ...safeForm,
-          purchase_date: sanitizeDate(safeForm.purchase_date),
-          stnk_expiry: sanitizeDate(safeForm.stnk_expiry),
+          ...form,
+          purchase_date: sanitizeDate(form.purchase_date),
+          stnk_expiry: sanitizeDate(form.stnk_expiry),
           user_id: userId || '',
           qr_value: `${location.origin}/ga-asset?id=${editId}`,
         })
@@ -95,17 +94,17 @@ export default function GAAssetFormModal({
       toast.success('Asset berhasil diperbarui');
     } else {
       const now = new Date().toISOString();
-      const newId = await generateId(safeForm.category, now.slice(0, 10));
+      const newId = await generateId(form.category, now.slice(0, 10));
 
       const { error: insertError } = await supabase.from('ga_assets').insert([
         {
-          ...safeForm,
+          ...form,
           id: newId,
           created_at: now,
           user_id: userId || '',
           qr_value: `${location.origin}/ga-asset?id=${newId}`,
-          purchase_date: sanitizeDate(safeForm.purchase_date),
-          stnk_expiry: sanitizeDate(safeForm.stnk_expiry),
+          purchase_date: sanitizeDate(form.purchase_date),
+          stnk_expiry: sanitizeDate(form.stnk_expiry),
         },
       ]);
 
@@ -143,8 +142,8 @@ export default function GAAssetFormModal({
                 <label className="text-sm text-gray-600 capitalize">{key.replace('_', ' ')}</label>
                 <input
                   type="text"
-                  value={(safeForm[key as keyof GAAsset] as string) || ''}
-                  onChange={(e) => setForm({ ...safeForm, [key]: e.target.value })}
+                  value={(form[key as keyof GAAsset] as string) || ''}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   className="border px-3 py-2 rounded w-full text-sm"
                 />
               </div>
@@ -153,8 +152,8 @@ export default function GAAssetFormModal({
             <div className="flex flex-col gap-1 md:col-span-2">
               <label className="text-sm text-gray-600">Category</label>
               <select
-                value={safeForm.category || ''}
-                onChange={(e) => setForm({ ...safeForm, category: e.target.value })}
+                value={form.category || ''}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="border px-3 py-2 rounded w-full text-sm"
               >
                 <option value="">-- Select Category --</option>
@@ -171,20 +170,20 @@ export default function GAAssetFormModal({
               <label className="text-sm text-gray-600">Purchase Date</label>
               <input
                 type="date"
-                value={safeForm.purchase_date?.slice(0, 10) || ''}
-                onChange={(e) => setForm({ ...safeForm, purchase_date: e.target.value })}
+                value={form.purchase_date?.slice(0, 10) || ''}
+                onChange={(e) => setForm({ ...form, purchase_date: e.target.value })}
                 className="border px-3 py-2 rounded w-full text-sm"
               />
             </div>
 
-            {safeForm.category === 'Kendaraan' && (
+            {form.category === 'Kendaraan' && (
               <>
                 <div className="flex flex-col gap-1">
                   <label className="text-sm text-gray-600">No Plat</label>
                   <input
                     type="text"
-                    value={safeForm.no_plate || ''}
-                    onChange={(e) => setForm({ ...safeForm, no_plate: e.target.value })}
+                    value={form.no_plate || ''}
+                    onChange={(e) => setForm({ ...form, no_plate: e.target.value })}
                     className="border px-3 py-2 rounded w-full text-sm"
                   />
                 </div>
@@ -192,8 +191,8 @@ export default function GAAssetFormModal({
                   <label className="text-sm text-gray-600">Jenis Kendaraan</label>
                   <input
                     type="text"
-                    value={safeForm.vehicle_type || ''}
-                    onChange={(e) => setForm({ ...safeForm, vehicle_type: e.target.value })}
+                    value={form.vehicle_type || ''}
+                    onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })}
                     className="border px-3 py-2 rounded w-full text-sm"
                   />
                 </div>
@@ -201,8 +200,8 @@ export default function GAAssetFormModal({
                   <label className="text-sm text-gray-600">STNK Expiry</label>
                   <input
                     type="date"
-                    value={safeForm.stnk_expiry?.slice(0, 10) || ''}
-                    onChange={(e) => setForm({ ...safeForm, stnk_expiry: e.target.value })}
+                    value={form.stnk_expiry?.slice(0, 10) || ''}
+                    onChange={(e) => setForm({ ...form, stnk_expiry: e.target.value })}
                     className="border px-3 py-2 rounded w-full text-sm"
                   />
                 </div>
@@ -220,9 +219,9 @@ export default function GAAssetFormModal({
                 }}
                 className="text-sm"
               />
-              {safeForm.image_url && (
+              {form.image_url && (
                 <img
-                  src={safeForm.image_url}
+                  src={form.image_url}
                   alt="preview"
                   className="mt-2 max-h-40 rounded border object-contain"
                 />
