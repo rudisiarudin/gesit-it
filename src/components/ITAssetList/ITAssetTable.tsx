@@ -3,6 +3,7 @@
 import { Pencil, Trash2, Download } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { Asset } from '@/app/dashboard/it-assets/page';
 
 interface Props {
@@ -10,7 +11,7 @@ interface Props {
   currentPage: number;
   itemsPerPage: number;
   onEdit: (asset: Asset) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
   role: string;
 }
 
@@ -22,6 +23,37 @@ export default function ITAssetTable({
   onDelete,
   role,
 }: Props) {
+  const handleDelete = (asset: Asset) => {
+    toast.custom((t) => (
+      <div className="flex flex-col gap-2 bg-white p-4 rounded shadow max-w-sm">
+        <p className="font-medium text-sm">Hapus asset <b>{asset.item_name}</b>?</p>
+        <div className="flex gap-2 justify-end mt-2">
+          <button
+            onClick={() => toast.dismiss(t)}
+            className="px-3 py-1 text-sm border rounded hover:bg-gray-100"
+          >
+            Batal
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                await onDelete(asset.id);
+                toast.success('Asset berhasil dihapus');
+              } catch {
+                toast.error('Gagal menghapus asset');
+              } finally {
+                toast.dismiss(t);
+              }
+            }}
+            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Hapus
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
   return (
     <div className="overflow-auto">
       <table className="w-full bg-white shadow rounded text-sm">
@@ -68,9 +100,7 @@ export default function ITAssetTable({
                     </button>
                     {role === 'admin' && (
                       <button
-                        onClick={() => {
-                          if (confirm('Delete this asset?')) onDelete(a.id);
-                        }}
+                        onClick={() => handleDelete(a)}
                         className="text-red-600 hover:text-red-800"
                       >
                         <Trash2 size={16} />
@@ -79,11 +109,14 @@ export default function ITAssetTable({
                   </>
                 )}
 
-                {/* Tombol QR download satuan */}
+                {/* Tombol QR Download */}
                 <button
                   onClick={() => {
                     const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
-                    if (!sourceCanvas) return alert('QR Code not found');
+                    if (!sourceCanvas) {
+                      toast.error('QR Code tidak ditemukan');
+                      return;
+                    }
 
                     const qrSize = 1024;
                     const labelHeight = 160;

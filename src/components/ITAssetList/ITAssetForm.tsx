@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Asset } from '@/app/dashboard/it-assets/page';
 import AdditionalSpecs from '@/components/ITAssetList/AdditionalSpecs';
-
+import { toast } from 'sonner';
 
 interface Props {
   isOpen: boolean;
@@ -67,20 +67,13 @@ export default function ITAssetForm({
 
   const handleSubmit = async () => {
     if (!userId) {
-      alert('User tidak ditemukan. Silakan login ulang.');
+      toast.error('User tidak ditemukan. Silakan login ulang.');
       return;
     }
 
     const requiredFields = [
-      'item_name',
-      'category',
-      'brand',
-      'serial_number',
-      'status',
-      'location',
-      'user_assigned',
-      'company',
-      'department',
+      'item_name', 'category', 'brand', 'serial_number',
+      'status', 'location', 'user_assigned', 'company', 'department'
     ];
 
     const isValid = requiredFields.every((key) => {
@@ -89,7 +82,7 @@ export default function ITAssetForm({
     });
 
     if (!isValid) {
-      alert('Harap lengkapi semua field wajib.');
+      toast.error('Harap lengkapi semua field wajib.');
       return;
     }
 
@@ -101,7 +94,7 @@ export default function ITAssetForm({
       });
 
       if (!isSpecValid) {
-        alert('Harap lengkapi semua spesifikasi tambahan.');
+        toast.error('Harap lengkapi semua spesifikasi tambahan.');
         return;
       }
     }
@@ -120,29 +113,22 @@ export default function ITAssetForm({
       user_id: userId,
     };
 
+    let error;
     if (isEditing && editId) {
-      const { error } = await supabase
-        .from('it_assets')
-        .update(payload)
-        .eq('id', editId);
-
-      if (error) {
-        console.error('Update error:', error);
-        alert('Gagal update asset.');
-        return;
-      }
+      const res = await supabase.from('it_assets').update(payload).eq('id', editId);
+      error = res.error;
     } else {
-      const { error } = await supabase
-        .from('it_assets')
-        .insert([payload]);
-
-      if (error) {
-        console.error('Insert error:', error);
-        alert('Gagal menambah asset.');
-        return;
-      }
+      const res = await supabase.from('it_assets').insert([payload]);
+      error = res.error;
     }
 
+    if (error) {
+      console.error('Supabase error:', error);
+      toast.error(isEditing ? 'Gagal update asset.' : 'Gagal menambah asset.');
+      return;
+    }
+
+    toast.success(isEditing ? 'Asset berhasil diupdate.' : 'Asset berhasil ditambahkan.');
     onClose();
     fetchAssets();
   };
@@ -250,9 +236,7 @@ export default function ITAssetForm({
             </div>
 
             {/* Spesifikasi Tambahan */}
-            {isLaptopOrPC && (
-              <AdditionalSpecs form={form} setForm={setForm} />
-            )}
+            {isLaptopOrPC && <AdditionalSpecs form={form} setForm={setForm} />}
 
             <div className="mt-6 flex justify-end">
               <button

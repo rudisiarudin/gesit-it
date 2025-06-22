@@ -3,15 +3,28 @@
 import React from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { Archive } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { FileDown, Archive } from 'lucide-react';
+import ImportExcel from './ImportExcel';
 import { Asset } from '@/app/dashboard/it-assets/page';
 
 type Props = {
   assets: Asset[];
+  userId: string;
+  fetchAssets: () => void; // ✅ sebelumnya tidak dipakai
 };
 
-const DownloadAllQRButton: React.FC<Props> = ({ assets }) => {
-  const handleDownload = async () => {
+const ExportButtons: React.FC<Props> = ({ assets, userId, fetchAssets }) => {
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(assets);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'IT Assets');
+    const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+    saveAs(blob, 'it_assets.xlsx');
+  };
+
+  const handleDownloadAllQR = async () => {
     const zip = new JSZip();
 
     for (const asset of assets) {
@@ -30,14 +43,31 @@ const DownloadAllQRButton: React.FC<Props> = ({ assets }) => {
   };
 
   return (
-    <button
-      onClick={handleDownload}
-      className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center gap-1"
-    >
-      <Archive size={18} />
-      Download QR All
-    </button>
+    <div className="flex flex-wrap gap-2 items-center mb-4">
+      {/* Export Excel */}
+      <button
+        onClick={handleExportExcel}
+        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-1 text-sm"
+      >
+        <FileDown size={16} />
+        Export Excel
+      </button>
+
+      {/* Download QR All */}
+      <button
+        onClick={handleDownloadAllQR}
+        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center gap-1 text-sm"
+      >
+        <Archive size={16} />
+        Download QR All
+      </button>
+
+      {/* Import Excel */}
+      <div className="ml-auto">
+        <ImportExcel userId={userId} fetchAssets={fetchAssets} /> {/* ✅ prop lengkap */}
+      </div>
+    </div>
   );
 };
 
-export default DownloadAllQRButton;
+export default ExportButtons;

@@ -1,4 +1,3 @@
-// src/components/types.ts
 export interface GAAsset {
   id: string;
   item_name: string;
@@ -10,6 +9,8 @@ export interface GAAsset {
   user_assigned: string;
   remarks: string;
   qr_value: string;
+
+  // Optional fields
   user_id?: string;
   image_url?: string;
   created_at?: string;
@@ -32,6 +33,8 @@ export const emptyAssetForm: GAAsset = {
   user_assigned: '',
   remarks: '',
   qr_value: '',
+
+  // Optional defaults
   user_id: '',
   image_url: '',
   created_at: '',

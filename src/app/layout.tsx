@@ -2,18 +2,11 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
-
 import { SupabaseProvider } from "./supabase-provider";
+import { Toaster } from "sonner"; // ✅ import Toaster
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const robotoMono = Roboto_Mono({
-  variable: "--font-roboto-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const robotoMono = Roboto_Mono({ variable: "--font-roboto-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "IT Gesit",
@@ -28,7 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
       <body className="antialiased">
-        <SupabaseProvider>{children}</SupabaseProvider>
+        <SupabaseProvider>
+          {children}
+          <Toaster richColors position="top-center" /> {/* ✅ Tambahkan ini */}
+        </SupabaseProvider>
       </body>
     </html>
   );

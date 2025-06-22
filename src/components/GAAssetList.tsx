@@ -11,6 +11,7 @@ import DownloadAllQRButton from '@/components/DownloadAllQRButton';
 import { GAAsset, emptyAssetForm } from '@/components/types';
 import GAAssetTable from './GAAssetTable';
 import GAAssetFormModal from './GAAssetFormModal';
+import { toast } from 'sonner';
 
 export default function GAAssetList() {
   const [assets, setAssets] = useState<GAAsset[]>([]);
@@ -19,6 +20,8 @@ export default function GAAssetList() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<GAAsset>(emptyAssetForm);
   const [searchTerm, setSearchTerm] = useState('');
+  const [itemsPerPage, setItemsPerPage] = useState(10); // ✅ dropdown kontrol jumlah item
+
   const router = useRouter();
   const { role, userId } = useUserRole();
 
@@ -42,6 +45,42 @@ export default function GAAssetList() {
     if (!error && data) setAssets(data);
   };
 
+  const confirmDelete = (asset: GAAsset) => {
+    toast.custom((t) => (
+      <div className="bg-white p-4 rounded shadow max-w-sm flex flex-col gap-2">
+        <p className="text-sm font-medium">
+          Hapus asset <b>{asset.item_name}</b>?
+        </p>
+        <div className="flex justify-end gap-2 mt-2">
+          <button
+            onClick={() => toast.dismiss(t)}
+            className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
+          >
+            Batal
+          </button>
+          <button
+            onClick={() => handleDelete(asset.id, t)}
+            className="text-sm px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Hapus
+          </button>
+        </div>
+      </div>
+    ));
+  };
+
+  const handleDelete = async (id: string, toastId?: string | number) => {
+    if (role !== 'admin') return;
+    const { error } = await supabase.from('ga_assets').delete().eq('id', id);
+    if (error) {
+      toast.error('Gagal menghapus asset');
+    } else {
+      toast.success('Asset berhasil dihapus');
+      fetchAssets();
+    }
+    if (toastId) toast.dismiss(toastId);
+  };
+
   const handleEdit = (asset: GAAsset) => {
     setForm(asset);
     setEditId(asset.id);
@@ -49,24 +88,15 @@ export default function GAAssetList() {
     setIsOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (role !== 'admin') return;
-    if (!confirm('Delete this asset?')) return;
-    const { error } = await supabase.from('ga_assets').delete().eq('id', id);
-    if (!error) fetchAssets();
-  };
-
   const filteredAssets = assets.filter((asset) =>
-  Object.values(asset)
-    .filter((val) => typeof val === 'string')
-    .some((val) =>
-      val.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-);
+    Object.values(asset)
+      .filter((val) => typeof val === 'string')
+      .some((val) => val.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   const { currentPage, totalPages, paginatedItems, nextPage, prevPage } = usePagination(
     filteredAssets.length,
-    10
+    itemsPerPage
   );
   const displayedAssets = paginatedItems(filteredAssets);
 
@@ -122,15 +152,29 @@ export default function GAAssetList() {
         currentPage={currentPage}
         searchTerm={searchTerm}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={confirmDelete}
         role={role}
       />
 
-      <div className="flex justify-between items-center mt-4">
+      {/* Pagination + Dropdown */}
+      <div className="flex flex-wrap justify-between items-center gap-4 mt-4">
         <p className="text-sm">
-          Showing {(currentPage - 1) * 10 + 1}–{Math.min(currentPage * 10, filteredAssets.length)} of{' '}
-          {filteredAssets.length}
+          Showing {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredAssets.length)} of {filteredAssets.length}
         </p>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm">Tampilkan:</label>
+          <select
+            className="border px-2 py-1 rounded text-sm"
+            value={itemsPerPage}
+            onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+          >
+            {[10, 20, 30, 50].map((num) => (
+              <option key={num} value={num}>{num}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="space-x-2">
           <button
             onClick={prevPage}
@@ -141,7 +185,7 @@ export default function GAAssetList() {
           </button>
           <button
             onClick={nextPage}
-            disabled={currentPage * 10 >= filteredAssets.length}
+            disabled={currentPage >= totalPages}
             className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
           >
             Next

@@ -1,20 +1,18 @@
 'use client';
 
-import { Download, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Download } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { GAAsset } from './types';
-import { useRef } from 'react';
-import html2canvas from 'html2canvas';
-import { saveAs } from 'file-saver';
+import { format } from 'date-fns';
+import { GAAsset } from '@/components/types';
 
-type Props = {
+interface Props {
   assets: GAAsset[];
   currentPage: number;
   searchTerm: string;
-  onEdit: (a: GAAsset) => void;
-  onDelete: (id: string) => void;
+  onEdit: (asset: GAAsset) => void;
+  onDelete: (asset: GAAsset) => void;
   role: string;
-};
+}
 
 export default function GAAssetTable({
   assets,
@@ -24,111 +22,125 @@ export default function GAAssetTable({
   onDelete,
   role,
 }: Props) {
-  const qrRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const itemsPerPage = 10;
 
-  const handleDownloadQR = async (asset: GAAsset) => {
-    const target = qrRefs.current[asset.id];
-    if (!target) return alert('QR not ready');
+  const handleDownloadQR = (asset: GAAsset) => {
+    const sourceCanvas = document.getElementById(`qr-${asset.id}`) as HTMLCanvasElement;
+    if (!sourceCanvas) return;
 
-    const canvas = await html2canvas(target, { backgroundColor: '#fff' });
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const safeName = asset.item_name.replace(/[<>:"/\\|?*]+/g, '-');
-        saveAs(blob, `QR-${safeName}-${asset.id}.png`);
-      }
-    });
+    const qrSize = 1024;
+    const labelHeight = 160;
+    const padding = 40;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = qrSize + padding * 2;
+    canvas.height = qrSize + labelHeight + padding * 2;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
+
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+
+    ctx.font = 'bold 48px Arial';
+    ctx.fillText(asset.item_name, canvas.width / 2, qrSize + padding + 70);
+
+    ctx.font = '36px Arial';
+    ctx.fillText(`ID: ${asset.id}`, canvas.width / 2, qrSize + padding + 120);
+
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = `QR-${asset.item_name.replace(/[\\/:*?"<>|]/g, '-')}.png`;
+    link.click();
   };
 
   return (
     <div className="overflow-auto">
       <table className="w-full bg-white shadow rounded text-sm">
-        <thead className="bg-gray-100">
+        <thead className="bg-gray-100 text-gray-700">
           <tr>
             <th className="p-2">No</th>
-            <th className="p-2">Image</th>
             <th className="p-2">Item</th>
-            <th className="p-2">Asset ID</th>
             <th className="p-2">Category</th>
+            <th className="p-2">Brand</th>
+            <th className="p-2">S/N</th>
             <th className="p-2">Status</th>
             <th className="p-2">Location</th>
             <th className="p-2">User</th>
+            <th className="p-2">Remarks</th>
+            <th className="p-2">Purchase Date</th>
             <th className="p-2">Actions</th>
           </tr>
         </thead>
         <tbody>
           {assets.length === 0 ? (
             <tr>
-              <td colSpan={9} className="text-center p-4 text-gray-500">
+              <td colSpan={11} className="text-center py-4 text-gray-500">
                 No assets found.
               </td>
             </tr>
           ) : (
-            assets.map((a, i) => (
-              <tr key={a.id} className="border-t">
-                <td className="p-2">{(currentPage - 1) * 10 + i + 1}</td>
+            assets.map((asset, index) => (
+              <tr key={asset.id} className="border-t hover:bg-gray-50">
+                <td className="p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                <td className="p-2">{asset.item_name}</td>
+                <td className="p-2">{asset.category}</td>
+                <td className="p-2">{asset.brand}</td>
+                <td className="p-2">{asset.serial_number}</td>
+                <td className="p-2">{asset.status}</td>
+                <td className="p-2">{asset.location}</td>
+                <td className="p-2">{asset.user_assigned}</td>
+                <td className="p-2">{asset.remarks}</td>
                 <td className="p-2">
-                  {a.image_url && (
-                    <img
-                      src={a.image_url}
-                      alt="asset"
-                      className="h-12 w-12 object-cover rounded border"
-                    />
-                  )}
+                  {asset.purchase_date
+                    ? format(new Date(asset.purchase_date), 'dd-MM-yyyy')
+                    : '-'}
                 </td>
-                <td className="p-2">{a.item_name}</td>
-                <td className="p-2">{a.id}</td>
-                <td className="p-2">{a.category}</td>
-                <td className="p-2">{a.status}</td>
-                <td className="p-2">{a.location}</td>
-                <td className="p-2">{a.user_assigned}</td>
                 <td className="p-2 flex gap-2 items-center">
+                  {(role === 'admin' || role === 'staff') && (
+                    <>
+                      <button
+                        onClick={() => onEdit(asset)}
+                        title="Edit"
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      {role === 'admin' && (
+                        <button
+                          onClick={() => onDelete(asset)}
+                          title="Delete"
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </>
+                  )}
+
                   <button
-                    onClick={() => handleDownloadQR(a)}
+                    onClick={() => handleDownloadQR(asset)}
                     className="text-green-600 hover:text-green-800"
                     title="Download QR"
                   >
                     <Download size={16} />
                   </button>
 
-                  {(role === 'admin' || role === 'staff') && (
-                    <button
-                      onClick={() => onEdit(a)}
-                      className="text-blue-600 hover:text-blue-800"
-                      title="Edit"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                  )}
-                  {role === 'admin' && (
-                    <button
-                      onClick={() => onDelete(a.id)}
-                      className="text-red-600 hover:text-red-800"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-
-                  {/* Hidden QR DOM */}
-                  <div
-                    ref={(el) => {
-                      qrRefs.current[a.id] = el;
-                    }}
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      left: '-9999px',
-                      backgroundColor: '#fff',
-                      padding: '40px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <QRCodeCanvas value={a.qr_value} size={256} />
-                    <div style={{ marginTop: '20px', fontSize: '16px', fontWeight: 'bold' }}>
-                      {a.item_name}
-                    </div>
-                    <div style={{ fontSize: '14px' }}>ID: {a.id}</div>
-                  </div>
+                  <QRCodeCanvas
+                    id={`qr-${asset.id}`}
+                    value={asset.qr_value || asset.id}
+                    size={1024}
+                    className="hidden"
+                  />
                 </td>
               </tr>
             ))
