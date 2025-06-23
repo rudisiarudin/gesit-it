@@ -215,6 +215,7 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
                 </span>
               ) : (
                 <>
+                   {role === "staff" && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -223,6 +224,7 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
                     className="text-blue-600 hover:text-blue-800 text-xs inline-flex items-center gap-1"
                     title="Edit"
                   >
+                    )}
                     <Pencil size={14} /> Edit
                   </button>
                   {role === "admin" && (
