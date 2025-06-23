@@ -76,7 +76,7 @@ export default function GAAssetTable({
             <th className="p-2">Status</th>
             <th className="p-2">Location</th>
             <th className="p-2">User</th>
-            <th className="p-2">Remarks</th>
+            <th className="p-2">Condition</th>
             <th className="p-2">Purchase Date</th>
             <th className="p-2">Actions</th>
           </tr>
@@ -99,7 +99,7 @@ export default function GAAssetTable({
                 <td className="p-2">{asset.status}</td>
                 <td className="p-2">{asset.location}</td>
                 <td className="p-2">{asset.user_assigned}</td>
-                <td className="p-2">{asset.remarks}</td>
+                <td className="p-2">{asset.condition}</td>
                 <td className="p-2">
                   {asset.purchase_date
                     ? format(new Date(asset.purchase_date), 'dd-MM-yyyy')
