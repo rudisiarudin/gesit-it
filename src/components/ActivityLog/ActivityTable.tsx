@@ -70,7 +70,7 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
                     {act.type}
                   </span>
                 </td>
-               <td className="p-3 text-center align-middle">
+                <td className="p-3 text-center align-middle">
                   <span
                     className={clsx(
                       'inline-flex justify-center items-center px-2 py-1 text-xs rounded-full font-semibold border select-none',
@@ -84,17 +84,16 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
                     {act.status}
                   </span>
                 </td>
-
                 <td className="p-3 text-xs leading-snug space-y-1">
                   <div>
-                    <span className="text-gray-500">Create :</span>{" "}
-                    <span className="font-semibold">{format(new Date(act.created_at), "dd MMM")}</span> |{" "}
+                    <span className="text-gray-500">Create :</span>{' '}
+                    <span className="font-semibold">{format(new Date(act.created_at), "dd MMM")}</span> |{' '}
                     <span className="text-gray-800">{format(new Date(act.created_at), "HH:mm")}</span>
                   </div>
                   {act.updated_at && (
                     <div>
-                      <span className="text-blue-600">Update :</span>{" "}
-                      <span className="font-semibold">{format(new Date(act.updated_at), "dd MMM")}</span> |{" "}
+                      <span className="text-blue-600">Update :</span>{' '}
+                      <span className="font-semibold">{format(new Date(act.updated_at), "dd MMM")}</span> |{' '}
                       <span className="text-blue-800">{format(new Date(act.updated_at), "HH:mm")}</span>
                     </div>
                   )}
@@ -105,11 +104,10 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
                 <td className="p-3 text-xs italic text-gray-500 mt-1 whitespace-normal break-words">
                   {act.remarks}
                 </td>
-                <td
-                  className="p-3 text-center space-x-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {act.status === "Completed" ? (
+                <td className="p-3 text-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                  {role === 'user' ? (
+                    <span className="text-gray-400 italic text-xs">View only</span>
+                  ) : act.status === "Completed" ? (
                     <span className="inline-flex items-center gap-1 px-2 py-1 text-green-700 bg-green-100 border border-green-300 rounded-full text-xs select-none">
                       <CheckCircle2 size={14} /> Done
                     </span>
@@ -189,14 +187,14 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
 
             <div className="text-xs space-y-1 mt-2">
               <div>
-                <span className="text-gray-500">Create:</span>{" "}
-                <span className="font-bold">{format(new Date(act.created_at), "dd MMM")}</span> |{" "}
+                <span className="text-gray-500">Create:</span>{' '}
+                <span className="font-bold">{format(new Date(act.created_at), "dd MMM")}</span> |{' '}
                 <span className="text-gray-800">{format(new Date(act.created_at), "HH:mm")}</span>
               </div>
               {act.updated_at && (
                 <div>
-                  <span className="text-blue-600">Update:</span>{" "}
-                  <span className="font-bold">{format(new Date(act.updated_at), "dd MMM")}</span> |{" "}
+                  <span className="text-blue-600">Update:</span>{' '}
+                  <span className="font-bold">{format(new Date(act.updated_at), "dd MMM")}</span> |{' '}
                   <span className="text-blue-800">{format(new Date(act.updated_at), "HH:mm")}</span>
                 </div>
               )}
@@ -209,24 +207,26 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
             <div className="mt-1 text-xs text-gray-600">{act.remarks}</div>
 
             <div className="mt-3 space-x-2">
-              {act.status === "Completed" ? (
+              {role === 'user' ? (
+                <span className="text-gray-400 italic text-xs">View only</span>
+              ) : act.status === "Completed" ? (
                 <span className="inline-flex items-center gap-1 px-2 py-1 text-green-700 bg-green-100 border border-green-300 rounded-full text-xs select-none">
                   <CheckCircle2 size={14} /> Done
                 </span>
               ) : (
                 <>
-                   {role === "staff" && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(act);
-                    }}
-                    className="text-blue-600 hover:text-blue-800 text-xs inline-flex items-center gap-1"
-                    title="Edit"
-                  >
-                    )}
-                    <Pencil size={14} /> Edit
-                  </button>
+                  {(role === "staff" || role === "admin") && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(act);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-xs inline-flex items-center gap-1"
+                      title="Edit"
+                    >
+                      <Pencil size={14} /> Edit
+                    </button>
+                  )}
                   {role === "admin" && (
                     <button
                       onClick={(e) => {
