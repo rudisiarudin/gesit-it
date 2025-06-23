@@ -245,18 +245,21 @@ export default function ActivityLogPage() {
           {/* Export Buttons */}
           <ExportButtons activities={activities} />
 
-          {/* Add Activity */}
-          <button
-            onClick={() => {
-              setShowForm(true);
-              setEditingId(null);
-              setFormData({ ...initialForm, it: userIt });
-            }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow text-sm"
-            aria-label="Add new activity"
-          >
-            + Add
-          </button>
+         {/* Add Activity (only for staff) */}
+            {role === 'staff' && (
+              <button
+                onClick={() => {
+                  setShowForm(true);
+                  setEditingId(null);
+                  setFormData({ ...initialForm, it: userIt });
+                }}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow text-sm"
+                aria-label="Add new activity"
+              >
+                + Add
+              </button>
+            )}
+
         </div>
       </div>
 
