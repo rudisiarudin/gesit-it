@@ -41,7 +41,6 @@ export default function WeeklyPlan() {
       } else {
         const uid = session.user.id;
         setUserId(uid);
-        fetchPlans(uid);
 
         const { data: profile, error } = await supabase
           .from('user_profiles')
@@ -50,7 +49,9 @@ export default function WeeklyPlan() {
           .single();
 
         if (!error && profile) {
-          setRole(profile.role.toLowerCase());
+          const userRole = profile.role.toLowerCase();
+          setRole(userRole);
+          fetchPlans(userRole);
         }
       }
     };
@@ -58,13 +59,10 @@ export default function WeeklyPlan() {
     checkSession();
   }, []);
 
-  const fetchPlans = async (uid: string) => {
-    const { data, error } = await supabase
-      .from('weekly_plans')
-      .select('*')
-      .eq('user_id', uid)
-      .order('id', { ascending: true });
+  const fetchPlans = async (userRole: string) => {
+    let query = supabase.from('weekly_plans').select('*').order('id', { ascending: true });
 
+    const { data, error } = await query;
     if (!error && data) setPlans(data);
   };
 
@@ -93,7 +91,7 @@ export default function WeeklyPlan() {
     setIsOpen(false);
     setIsEditing(false);
     setEditId(null);
-    fetchPlans(userId);
+    fetchPlans(role || '');
   };
 
   const handleEdit = (plan: Plan) => {
@@ -118,7 +116,7 @@ export default function WeeklyPlan() {
     if (!confirmed) return;
 
     const { error } = await supabase.from('weekly_plans').delete().eq('id', id);
-    if (!error && userId) fetchPlans(userId);
+    if (!error && role) fetchPlans(role);
   };
 
   return (
@@ -149,7 +147,9 @@ export default function WeeklyPlan() {
             <th className="text-left p-3">Month</th>
             <th className="text-left p-3">Year</th>
             <th className="text-left p-3">Status</th>
-            <th className="text-left p-3">Actions</th>
+            {(role === 'admin' || role === 'staff') && (
+              <th className="text-left p-3">Actions</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -161,18 +161,24 @@ export default function WeeklyPlan() {
               <td className="p-3">{plan.month}</td>
               <td className="p-3">{plan.year}</td>
               <td className="p-3">{plan.status}</td>
-              <td className="p-3 flex gap-2">
-                {(role === 'admin' || role === 'staff') && (
-                  <button onClick={() => handleEdit(plan)} className="text-blue-600 hover:underline">
+              {(role === 'admin' || role === 'staff') && (
+                <td className="p-3 flex gap-2">
+                  <button
+                    onClick={() => handleEdit(plan)}
+                    className="text-blue-600 hover:underline"
+                  >
                     <Pencil size={16} />
                   </button>
-                )}
-                {role === 'admin' && (
-                  <button onClick={() => handleDelete(plan.id)} className="text-red-600 hover:underline">
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </td>
+                  {role === 'admin' && (
+                    <button
+                      onClick={() => handleDelete(plan.id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
