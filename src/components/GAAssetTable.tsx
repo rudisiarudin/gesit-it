@@ -72,7 +72,7 @@ export default function GAAssetTable({
             <th className="p-2">Item</th>
             <th className="p-2">Category</th>
             <th className="p-2">Brand</th>
-            <th className="p-2">S/N</th>
+            <th className="p-2">ID</th>
             <th className="p-2">Status</th>
             <th className="p-2">Location</th>
             <th className="p-2">User</th>
@@ -95,7 +95,7 @@ export default function GAAssetTable({
                 <td className="p-2">{asset.item_name}</td>
                 <td className="p-2">{asset.category}</td>
                 <td className="p-2">{asset.brand}</td>
-                <td className="p-2">{asset.serial_number}</td>
+                <td className="p-2">{asset.id}</td>
                 <td className="p-2">{asset.status}</td>
                 <td className="p-2">{asset.location}</td>
                 <td className="p-2">{asset.user_assigned}</td>
