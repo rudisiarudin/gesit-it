@@ -100,7 +100,7 @@ export default function ItAssetListPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">IT Asset List</h1>
-        <ImportExcel userId={userId || ''} fetchAssets={fetchAssets} />
+{/*         <ImportExcel userId={userId || ''} fetchAssets={fetchAssets} /> */}
       </div>
 
       {/* Filter/Search Bar */}
