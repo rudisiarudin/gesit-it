@@ -11,10 +11,11 @@ import { Asset } from '@/app/dashboard/it-assets/page';
 type Props = {
   assets: Asset[];
   userId: string;
-  fetchAssets: () => void; // ✅ sebelumnya tidak dipakai
+  fetchAssets: () => void;
+  role: string; // ✅ tambahkan role
 };
 
-const ExportButtons: React.FC<Props> = ({ assets, userId, fetchAssets }) => {
+const ExportButtons: React.FC<Props> = ({ assets, userId, fetchAssets, role }) => {
   const handleExportExcel = () => {
     const ws = XLSX.utils.json_to_sheet(assets);
     const wb = XLSX.utils.book_new();
@@ -62,10 +63,12 @@ const ExportButtons: React.FC<Props> = ({ assets, userId, fetchAssets }) => {
         Download QR All
       </button>
 
-      {/* Import Excel */}
-      <div className="ml-auto">
-        <ImportExcel userId={userId} fetchAssets={fetchAssets} /> {/* ✅ prop lengkap */}
-      </div>
+      {/* Import Excel (admin only) */}
+      {role === 'admin' && (
+        <div className="ml-auto">
+          <ImportExcel userId={userId} fetchAssets={fetchAssets} />
+        </div>
+      )}
     </div>
   );
 };
