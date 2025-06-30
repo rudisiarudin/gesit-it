@@ -87,14 +87,12 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
                 <td className="p-3 text-xs leading-snug space-y-1">
                   <div>
                     <span className="text-gray-500">Create :</span>{' '}
-                    <span className="font-semibold">{format(new Date(act.created_at), 'dd MMM')}</span> |{' '}
-                    <span className="text-gray-800">{format(new Date(act.created_at), 'HH:mm')}</span>
+                    <span className="font-semibold">{format(new Date(act.created_at), 'dd MMM yyyy')}</span>
                   </div>
                   {act.updated_at && (
                     <div>
                       <span className="text-blue-600">Update :</span>{' '}
-                      <span className="font-semibold">{format(new Date(act.updated_at), 'dd MMM')}</span> |{' '}
-                      <span className="text-blue-800">{format(new Date(act.updated_at), 'HH:mm')}</span>
+                      <span className="font-semibold">{format(new Date(act.updated_at), 'dd MMM yyyy')}</span>
                     </div>
                   )}
                 </td>
@@ -188,14 +186,12 @@ export default function ActivityTable({ activities, role, onEdit, onView, onDele
             <div className="text-xs space-y-1 mt-2">
               <div>
                 <span className="text-gray-500">Create:</span>{' '}
-                <span className="font-bold">{format(new Date(act.created_at), 'dd MMM')}</span> |{' '}
-                <span className="text-gray-800">{format(new Date(act.created_at), 'HH:mm')}</span>
+                <span className="font-bold">{format(new Date(act.created_at), 'dd MMM yyyy')}</span>
               </div>
               {act.updated_at && (
                 <div>
                   <span className="text-blue-600">Update:</span>{' '}
-                  <span className="font-bold">{format(new Date(act.updated_at), 'dd MMM')}</span> |{' '}
-                  <span className="text-blue-800">{format(new Date(act.updated_at), 'HH:mm')}</span>
+                  <span className="font-bold">{format(new Date(act.updated_at), 'dd MMM yyyy')}</span>
                 </div>
               )}
             </div>
