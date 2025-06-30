@@ -22,6 +22,7 @@ export type FormData = {
   category: string;
   remarks: string;
   status: string;
+  created_at: string;   // ✅ tambahkan ini
   duration?: string;
   updated_at?: string;
 };
