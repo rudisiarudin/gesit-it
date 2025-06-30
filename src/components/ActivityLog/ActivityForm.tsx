@@ -11,7 +11,12 @@ type Props = {
   onCancel: () => void;
   loading: boolean;
   editingId: number | null;
-  userIt: string; // user login name passed from parent
+  userIt: string;
+};
+
+// Fungsi bantu format ISO date ke YYYY-MM-DD
+const formatDateValue = (value?: string) => {
+  return value ? value.slice(0, 10) : '';
 };
 
 export default function ActivityForm({
@@ -28,15 +33,10 @@ export default function ActivityForm({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
-    // IT is readonly, prevent changes
     if (e.target.name === 'it') return;
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Responsive layout:
-  // Mobile: all fields stacked vertically
-  // Desktop (md+): 2-column grid for inputs, textarea full width
-  
   return (
     <Dialog open={true} onClose={onCancel} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -48,12 +48,17 @@ export default function ActivityForm({
 
           <form onSubmit={onSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {[{ label: 'Activity Name', name: 'activity_name' },
+              {[
+                { label: 'Activity Name', name: 'activity_name' },
                 { label: 'Location', name: 'location' },
                 { label: 'User', name: 'user' },
-                // IT is readonly
                 { label: 'IT', name: 'it', readonly: true },
-                { label: 'Type', name: 'type', type: 'select', options: ['Minor', 'Major'] },
+                {
+                  label: 'Type',
+                  name: 'type',
+                  type: 'select',
+                  options: ['Minor', 'Major'],
+                },
                 {
                   label: 'Category',
                   name: 'category',
@@ -61,52 +66,54 @@ export default function ActivityForm({
                   options: [
                     'Network', 'Hardware', 'Software',
                     'Printer', 'Email', 'Access Request',
-                    'Troubleshooting', 'Other'
+                    'Troubleshooting', 'Other',
                   ],
-                }].map(({ label, name, type, options, readonly }) => (
-                  <div key={name} className="flex flex-col">
-                    <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
-                      {label}
-                    </label>
-                    {name === 'it' ? (
-                      <input
-                        id={name}
-                        name="it"
-                        value={userIt}
-                        readOnly
-                        className="rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700 cursor-not-allowed"
-                      />
-                    ) : type === 'select' ? (
-                      <select
-                        id={name}
-                        name={name}
-                        value={formData[name as keyof FormData] || ''}
-                        onChange={handleChange}
-                        required
-                        className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select {label}</option>
-                        {options!.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        id={name}
-                        name={name}
-                        type="text"
-                        value={formData[name as keyof FormData] || ''}
-                        onChange={handleChange}
-                        required
-                        className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    )}
-                  </div>
-                ))}
+                },
+              ].map(({ label, name, type, options, readonly }) => (
+                <div key={name} className="flex flex-col">
+                  <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+                    {label}
+                  </label>
+                  {name === 'it' ? (
+                    <input
+                      id={name}
+                      name="it"
+                      value={userIt}
+                      readOnly
+                      className="rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700 cursor-not-allowed"
+                    />
+                  ) : type === 'select' ? (
+                    <select
+                      id={name}
+                      name={name}
+                      value={formData[name as keyof FormData] || ''}
+                      onChange={handleChange}
+                      required
+                      className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select {label}</option>
+                      {options!.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id={name}
+                      name={name}
+                      type="text"
+                      value={formData[name as keyof FormData] || ''}
+                      onChange={handleChange}
+                      required
+                      className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  )}
+                </div>
+              ))}
             </div>
 
+            {/* Remarks */}
             <div className="flex flex-col">
               <label htmlFor="remarks" className="block text-sm font-medium text-gray-700 mb-1">
                 Remarks
@@ -121,7 +128,9 @@ export default function ActivityForm({
               />
             </div>
 
+            {/* Additional Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Status */}
               <div className="flex flex-col">
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
                   Status
@@ -140,37 +149,55 @@ export default function ActivityForm({
                 </select>
               </div>
 
-              {editingId && (
-                <>
-                  <div className="flex flex-col">
-                    <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
-                      Duration
-                    </label>
-                    <input
-                      id="duration"
-                      name="duration"
-                      value={formData.duration || ''}
-                      readOnly
-                      className="rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700 cursor-not-allowed"
-                    />
-                  </div>
+              {/* Created At */}
+              <div className="flex flex-col">
+                <label htmlFor="created_at" className="block text-sm font-medium text-gray-700 mb-1">
+                  Created At
+                </label>
+                <input
+                  id="created_at"
+                  name="created_at"
+                  type="date"
+                  value={formatDateValue(formData.created_at)}
+                  onChange={handleChange}
+                  required
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                />
+              </div>
 
-                  {formData.updated_at && (
-                    <div className="flex flex-col">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Updated At
-                      </label>
-                      <input
-                        value={new Date(formData.updated_at).toLocaleString()}
-                        readOnly
-                        className="rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700 cursor-not-allowed"
-                      />
-                    </div>
-                  )}
-                </>
-              )}
+              {/* Updated At (optional) */}
+              <div className="flex flex-col">
+                <label htmlFor="updated_at" className="block text-sm font-medium text-gray-700 mb-1">
+                  Updated At
+                </label>
+                <input
+                  id="updated_at"
+                  name="updated_at"
+                  type="date"
+                  value={formatDateValue(formData.updated_at)}
+                  onChange={handleChange}
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                />
+              </div>
+
+              {/* Duration (optional) */}
+              <div className="flex flex-col">
+                <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration
+                </label>
+                <input
+                  id="duration"
+                  name="duration"
+                  type="text"
+                  value={formData.duration || ''}
+                  onChange={handleChange}
+                  placeholder="Contoh: 2 jam"
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                />
+              </div>
             </div>
 
+            {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4">
               <button
                 type="submit"
