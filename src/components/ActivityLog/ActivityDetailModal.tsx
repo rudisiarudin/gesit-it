@@ -73,11 +73,11 @@ export default function ActivityDetailModal({ activity, onClose }: Props) {
           <div className="grid grid-cols-2 gap-6 mb-8 text-sm text-gray-600">
             <div>
               <h4 className="font-semibold text-gray-800 mb-1">Created At</h4>
-              <p>{format(new Date(activity.created_at), "dd MMM yyyy, HH:mm")}</p>
+              <p>{format(new Date(activity.created_at), "dd MMM yyyy")}</p>
             </div>
             <div>
               <h4 className="font-semibold text-gray-800 mb-1">Updated At</h4>
-              <p>{activity.updated_at ? format(new Date(activity.updated_at), "dd MMM yyyy, HH:mm") : "-"}</p>
+              <p>{activity.updated_at ? format(new Date(activity.updated_at), "dd MMM yyyy") : "-"}</p>
             </div>
             <div>
               <h4 className="font-semibold text-gray-800 mb-1">Duration</h4>
