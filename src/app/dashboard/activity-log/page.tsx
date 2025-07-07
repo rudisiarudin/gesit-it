@@ -157,21 +157,11 @@ export default function ActivityLogPage() {
     e.preventDefault();
     setLoading(true);
     const updatedData: Partial<FormData> = { ...formData };
+
     if (formData.status === 'Completed') {
-      const nowIso = new Date().toISOString();
-      updatedData.updated_at = nowIso;
-      if (editingId) {
-        const existing = rawActivities.find((a) => a.id === editingId);
-        if (existing) {
-          const start = new Date(existing.created_at);
-          const end = new Date(nowIso);
-          const diffMs = end.getTime() - start.getTime();
-          const hours = Math.floor(diffMs / (1000 * 60 * 60));
-          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-          updatedData.duration = `${hours}h ${minutes}m`;
-        }
-      }
+      updatedData.updated_at = formData.updated_at;
     }
+
     try {
       if (editingId) {
         const { error } = await supabase
