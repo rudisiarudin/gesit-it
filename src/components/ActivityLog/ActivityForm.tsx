@@ -14,7 +14,7 @@ type Props = {
   userIt: string;
 };
 
-// Fungsi bantu format ISO date ke YYYY-MM-DD
+// Format ISO date to YYYY-MM-DD
 const formatDateValue = (value?: string) => {
   return value ? value.slice(0, 10) : '';
 };
@@ -33,8 +33,23 @@ export default function ActivityForm({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
-    if (e.target.name === 'it') return;
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'it') return;
+
+    setFormData({ ...formData, [name]: value });
+  };
+
+  // Wrapper untuk validasi sebelum submit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validasi: Jika status Completed, updated_at harus diisi
+    if (formData.status === 'Completed' && !formData.updated_at) {
+      alert('Field "Updated At" wajib diisi jika status Completed.');
+      return;
+    }
+
+    await onSubmit(e);
   };
 
   return (
@@ -46,9 +61,9 @@ export default function ActivityForm({
             {editingId ? 'Edit Activity' : 'New Activity'}
           </Dialog.Title>
 
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {[
+              {[ 
                 { label: 'Activity Name', name: 'activity_name' },
                 { label: 'Location', name: 'location' },
                 { label: 'User', name: 'user' },
@@ -130,7 +145,6 @@ export default function ActivityForm({
 
             {/* Additional Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Status */}
               <div className="flex flex-col">
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
                   Status
@@ -149,7 +163,6 @@ export default function ActivityForm({
                 </select>
               </div>
 
-              {/* Created At */}
               <div className="flex flex-col">
                 <label htmlFor="created_at" className="block text-sm font-medium text-gray-700 mb-1">
                   Created At
@@ -165,7 +178,6 @@ export default function ActivityForm({
                 />
               </div>
 
-              {/* Updated At (optional) */}
               <div className="flex flex-col">
                 <label htmlFor="updated_at" className="block text-sm font-medium text-gray-700 mb-1">
                   Updated At
@@ -180,7 +192,6 @@ export default function ActivityForm({
                 />
               </div>
 
-              {/* Duration (optional) */}
               <div className="flex flex-col">
                 <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
                   Duration
@@ -225,3 +236,4 @@ export default function ActivityForm({
     </Dialog>
   );
 }
+
