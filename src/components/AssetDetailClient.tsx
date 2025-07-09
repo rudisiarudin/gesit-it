@@ -23,7 +23,6 @@ interface Asset {
   storage?: string;
   ram?: string;
   vga?: string;
-  qr_value?: string;
   company?: string;
   department?: string;
   purchase_date?: string;
@@ -74,43 +73,49 @@ export default function AssetDetailClient() {
 
   const isLaptopOrPC = ['laptop', 'pc'].includes(asset.category.toLowerCase());
 
-  return (
-    <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800 text-center">IT Asset Detail</h1>
+ return (
+  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">IT Asset Detail</h1>
 
-      <div className="bg-white rounded-xl shadow-md p-6 space-y-6 border border-gray-200">
-        <div className="text-center space-y-1">
-          <p className="text-xl font-semibold text-gray-800">{asset.item_name}</p>
-          <p className="text-sm text-gray-500 font-mono">ID: {asset.id}</p>
-        </div>
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-1">
+        <p className="text-3xl md:text-4xl font-bold text-gray-900">{asset.item_name}</p>
+        <p className="text-sm text-gray-500 font-mono">NO ID : {asset.id}</p>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <DetailItem icon={<User size={16} />} label="User Assigned" value={asset.user_assigned} />
-          <DetailItem icon={<Tag size={16} />} label="Category" value={asset.category} />
-          <DetailItem icon={<BadgeCheck size={16} />} label="Brand" value={asset.brand} />
-          <DetailItem icon={<Hash size={16} />} label="Serial Number" value={asset.serial_number} />
-          <DetailItem icon={<Settings size={16} />} label="Status" value={asset.status} />
-          <DetailItem icon={<MapPin size={16} />} label="Location" value={asset.location} />
-          <DetailItem icon={<Building2 size={16} />} label="Company" value={asset.company || '-'} />
-          <DetailItem icon={<Users size={16} />} label="Department" value={asset.department || '-'} />
-          <DetailItem icon={<CalendarDays size={16} />} label="Purchase Date" value={formatDate(asset.purchase_date)} />
-          <DetailItem icon={<QrCode size={16} />} label="QR Value" value={asset.qr_value || '-'} />
-          <div className="col-span-1 md:col-span-2">
-            <DetailItem icon={<StickyNote size={16} />} label="Remarks" value={asset.remarks || '-'} />
-          </div>
+      {/* Informasi Dasar */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+        <DetailItem icon={<User size={16} />} label="User Assigned" value={asset.user_assigned} />
+        <DetailItem icon={<Tag size={16} />} label="Category" value={asset.category} />
+        <DetailItem icon={<BadgeCheck size={16} />} label="Brand" value={asset.brand} />
+        <DetailItem icon={<Hash size={16} />} label="Serial Number" value={asset.serial_number} />
+        <DetailItem icon={<Settings size={16} />} label="Status" value={asset.status} />
+        <DetailItem icon={<MapPin size={16} />} label="Location" value={asset.location} />
+        <DetailItem icon={<Building2 size={16} />} label="Company" value={asset.company || '-'} />
+        <DetailItem icon={<Users size={16} />} label="Department" value={asset.department || '-'} />
+        <DetailItem icon={<CalendarDays size={16} />} label="Purchase Date" value={formatDate(asset.purchase_date)} />
+        <DetailItem icon={<StickyNote size={16} />} label="Remarks" value={asset.remarks || '-'}  />
+      </div>
 
-          {isLaptopOrPC && (
-            <>
+      {/* Spesifikasi Teknis */}
+      {isLaptopOrPC && (
+        <>
+          <div className="border-t border-gray-200 pt-4">
+            <h2 className="text-lg font-semibold text-gray-700 mb-2">Technical Specifications</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
               <DetailItem icon={<Cpu size={16} />} label="Processor" value={asset.processor || '-'} />
               <DetailItem icon={<HardDrive size={16} />} label="Storage" value={asset.storage || '-'} />
               <DetailItem icon={<MemoryStick size={16} />} label="RAM" value={asset.ram || '-'} />
               <DetailItem icon={<MonitorSmartphone size={16} />} label="VGA" value={asset.vga || '-'} />
-            </>
-          )}
-        </div>
-      </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
-  );
+  </div>
+)
+
 }
 
 function DetailItem({
