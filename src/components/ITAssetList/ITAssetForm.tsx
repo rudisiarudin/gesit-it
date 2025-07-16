@@ -42,7 +42,7 @@ export default function ITAssetForm({
       company.toLowerCase().includes('dharma') ? 'DAS' :
       company.toLowerCase().includes('boc') ? 'BOC' :
       company.toLowerCase().includes('dinamika') ? 'DSM' :
-      company.toLowerCase().includes('yayasan gesit peduli') ? 'YGPB' :
+      company.toLowerCase().includes('yayasan gesit peduli') ? 'YGP' :
       'XX';
 
     const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
