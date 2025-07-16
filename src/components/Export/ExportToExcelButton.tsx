@@ -5,69 +5,77 @@ import { FileSpreadsheet } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 interface ExportToExcelButtonProps {
-  tableName: string;
+  // Salah satu wajib diisi
+  data?: any[]; // data dari state (mode lokal)
+  tableName?: string; // fetch dari Supabase (mode server)
   fileName?: string;
   tooltip?: string;
-  filters?: { column: string; value: string | number };
+  columns?: string[]; // kolom yang disertakan
+  filters?: { column: string; value: string | number }; // hanya untuk mode Supabase
 }
 
 export default function ExportToExcelButton({
+  data,
   tableName,
-  fileName = 'IT_Assets',
-  tooltip = 'Export semua data aset ke Excel',
+  fileName = 'Export',
+  tooltip = 'Export data ke Excel',
+  columns,
   filters,
 }: ExportToExcelButtonProps) {
   const handleExport = async () => {
-    if (!tableName || typeof tableName !== 'string') {
-      console.error('❌ Tabel tidak valid. Harap isi props tableName.');
+    let exportData: any[] = [];
+
+    // Mode lokal
+    if (data && Array.isArray(data)) {
+      exportData = data;
+    }
+    // Mode fetch dari Supabase
+    else if (tableName && typeof tableName === 'string') {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      let query = supabase.from(tableName).select('*').range(0, 9999);
+
+      if (filters) {
+        query = query.eq(filters.column, filters.value);
+      }
+
+      const { data: fetchedData, error } = await query;
+
+      if (error || !fetchedData || fetchedData.length === 0) {
+        console.error('❌ Gagal fetch data dari Supabase:', error?.message || error || 'Unknown error');
+        return;
+      }
+
+      exportData = fetchedData;
+    } else {
+      console.error('❌ Harus menyediakan data (props.data) atau tableName (props.tableName)');
       return;
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    let query = supabase.from(tableName).select('*').range(0, 9999);
-
-    if (filters) {
-      query = query.eq(filters.column, filters.value);
-    }
-
-    const { data, error } = await query;
-
-    if (error || !data || data.length === 0) {
-      console.error('❌ Gagal fetch data dari Supabase:', error?.message || error || 'Unknown error');
+    if (exportData.length === 0) {
+      console.warn('⚠ Tidak ada data untuk diekspor.');
       return;
     }
 
-    // Kolom yang ingin disertakan
-    const includedFields = Object.keys(data[0]).filter(
-      (key) =>
-        ![
-          'user_id',
-          'role',
-          'company',
-          'department',
-          'purchase_date',
-          'created_at',
-          'updated_at',
-          'user_full_name',
-        ].includes(key)
-    );
+    // Tentukan kolom yang disertakan
+    const includedFields = columns || Object.keys(exportData[0]);
 
-    // Tambahkan kolom 'No' dan filter kolom lain
-    const formatted = data.map((row, index) => {
-      const filteredRow: Record<string, any> = { No: index + 1 };
+    // Tambahkan kolom No + filter field
+    const formatted = exportData.map((row, index) => {
+      const rowFormatted: Record<string, any> = { No: index + 1 };
       includedFields.forEach((key) => {
-        filteredRow[key] = row[key] ?? '';
+        rowFormatted[key] = row[key] ?? '';
       });
-      return filteredRow;
+      return rowFormatted;
     });
 
+    // Generate Excel
     const ws = XLSX.utils.json_to_sheet(formatted);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'IT Assets');
+    XLSX.utils.book_append_sheet(wb, ws, 'Data');
 
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
