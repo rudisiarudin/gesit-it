@@ -3,7 +3,7 @@
 import * as XLSX from 'xlsx';
 import { FileSpreadsheet } from 'lucide-react';
 
-interface ExportToExcelIconButtonProps {
+interface ExportToExcelButtonProps {
   data: any[];
   fileName?: string;
   columns?: string[];
@@ -15,7 +15,7 @@ export default function ExportToExcelButton({
   fileName = 'Export',
   tooltip = 'Export to Excel',
   columns,
-}: ExportToExcelIconButtonProps) {
+}: ExportToExcelButtonProps) {
   const handleExport = () => {
     const exportData = columns
       ? data.map((row) =>
@@ -29,7 +29,14 @@ export default function ExportToExcelButton({
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const fullName = `${fileName}_${dd}${mm}${yyyy}.xlsx`;
+
+    XLSX.writeFile(workbook, fullName);
   };
 
   return (
