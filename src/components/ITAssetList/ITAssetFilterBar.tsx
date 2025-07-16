@@ -32,7 +32,7 @@ export default function ITAssetFilterBar({
 
       <div className="flex gap-2">
         <DownloadAllQRButton assets={assets} />
-        <ExportToExcelButton tableName="it_assets" fileName="IT_Assets" />
+        <ExportToExcelButton data={assets} fileName="IT_Assets" />
 
         {(role === 'admin' || role === 'staff') && (
           <button

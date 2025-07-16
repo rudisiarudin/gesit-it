@@ -2,7 +2,6 @@
 
 import * as XLSX from 'xlsx';
 import { FileSpreadsheet } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 
 interface ExportToExcelIconButtonProps {
   data: any[];
@@ -13,11 +12,9 @@ interface ExportToExcelIconButtonProps {
 
 export default function ExportToExcelButton({
   data,
-  tableName,
   fileName = 'Export',
-  tooltip = 'Export data ke Excel',
-  columns,
   tooltip = 'Export to Excel',
+  columns,
 }: ExportToExcelIconButtonProps) {
   const handleExport = () => {
     const exportData = columns
