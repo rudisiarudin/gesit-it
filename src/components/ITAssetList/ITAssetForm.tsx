@@ -33,17 +33,14 @@ export default function ITAssetForm({
     form.category?.toLowerCase().includes('pc');
 
   const generateId = async (category: string, company: string) => {
-    const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
-      company.toLowerCase().includes('gesit perkasa') ? 'GP' :
-      company.toLowerCase().includes('sircon') ? 'SI' :
-      company.toLowerCase().includes('alakasa') ? 'AI' :
-      company.toLowerCase().includes('gesit graha') ? 'GG' :
-      company.toLowerCase().includes('gesit intrade') ? 'GI' :
-      company.toLowerCase().includes('dharma') ? 'DAS' :
-      company.toLowerCase().includes('boc') ? 'BOC' :
-      company.toLowerCase().includes('dinamika') ? 'DSM' :
-      company.toLowerCase().includes('yayasan gesit peduli') ? 'YGP' :
-      'XX';
+  const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
+    company.toLowerCase().includes('gesit perkasa') ? 'GP' :
+    company.toLowerCase().includes('sircon') ? 'SI' :
+    company.toLowerCase().includes('alakasa') ? 'AI' :
+    company.toLowerCase().includes('gesit graha') ? 'GG' :
+    company.toLowerCase().includes('gesit intrade') ? 'GI' :
+    company.toLowerCase().includes('dharma') ? 'DAS' :
+    company.toLowerCase().includes('dinamika') ? 'DSM' : 'XX';
 
     const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
       category.toLowerCase().includes('pc') ? 'PC' :

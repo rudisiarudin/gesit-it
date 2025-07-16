@@ -110,54 +110,80 @@ export default function ITAssetTable({
                 )}
 
                 {/* Tombol QR Download */}
-                <button
-                  onClick={() => {
-                    const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
-                    if (!sourceCanvas) {
-                      toast.error('QR Code tidak ditemukan');
-                      return;
-                    }
+             <button
+              onClick={async () => {
+                await document.fonts.load('600 18px Montserrat');
+                await document.fonts.load('400 14px Montserrat');
 
-                    const qrSize = 1024;
-                    const labelHeight = 160;
-                    const padding = 40;
-                    const canvas = document.createElement('canvas');
-                    canvas.width = qrSize + padding * 2;
-                    canvas.height = qrSize + labelHeight + padding * 2;
+                const canvasWidth = 354;  // 30mm @ 300dpi
+                const canvasHeight = 591; // 50mm @ 300dpi
+                const canvas = document.createElement('canvas');
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                canvas.style.width = '30mm';
+                canvas.style.height = '50mm';
 
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
 
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                // ==== BACKGROUND PUTIH ====
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-                    ctx.strokeStyle = '#000';
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                // ==== HEADER HITAM ====
+                const headerHeight = 90;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvasWidth, headerHeight);
 
-                    ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.font = '400 20px Montserrat';
+                ctx.fillText('PROPERTY OF', canvasWidth / 2, 30);
 
-                    ctx.fillStyle = '#000';
-                    ctx.textAlign = 'center';
+                ctx.font = '600 20px Montserrat';
+                ctx.fillText(a.company ?? 'Company Name', canvasWidth / 2, 60);
 
-                    ctx.font = 'bold 48px Arial';
-                    ctx.fillText(a.item_name, canvas.width / 2, qrSize + padding + 70);
+                // ==== FOOTER HITAM ====
+                const footerHeight = 90;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, canvasHeight - footerHeight, canvasWidth, footerHeight);
 
-                    ctx.font = '36px Arial';
-                    ctx.fillText(`ID: ${a.id}`, canvas.width / 2, qrSize + padding + 120);
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.font = '600 16px Montserrat';
+                ctx.fillText(a.id ?? 'ID-0001', canvasWidth / 2, canvasHeight - footerHeight + 30);
 
-                    const link = document.createElement('a');
-                    link.href = canvas.toDataURL('image/png');
-                    link.download = `QR-${a.item_name.replace(/[\\/:*?"<>|]/g, '-')}.png`;
-                    link.click();
-                  }}
-                  className="text-green-600 hover:text-green-800"
-                >
-                  <Download size={16} />
-                </button>
+                ctx.font = '400 14px Montserrat';
+                ctx.fillText(a.item_name ?? 'Item Name', canvasWidth / 2, canvasHeight - footerHeight + 55);
+
+                // ==== QR CODE (BESAR & CENTER) ====
+                const qrSize = 260; // diperbesar
+                const qrX = (canvasWidth - qrSize) / 2;
+                const qrY = headerHeight + ((canvasHeight - headerHeight - footerHeight - qrSize) / 2);
+
+                const sourceCanvas = document.getElementById(`qr-download-${a.id}`) as HTMLCanvasElement;
+                if (!sourceCanvas) {
+                  toast.error('QR Code tidak ditemukan');
+                  return;
+                }
+
+                ctx.drawImage(sourceCanvas, qrX, qrY, qrSize, qrSize);
+
+                // ==== DOWNLOAD IMAGE ====
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `QR-${(a.item_name ?? 'item').replace(/[\\/:*?"<>|]/g, '-')}.png`;
+                link.click();
+              }}
+              className="text-green-600 hover:text-green-800"
+            >
+              <Download size={16} />
+            </button>
+
+
 
                 {/* Hidden QR canvases */}
-                <QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1024} className="hidden" />
+                <QRCodeCanvas id={`qr-download-${a.id}`} value={a.qr_value} size={1980} className="hidden" />
                 <QRCodeCanvas id={`qr-${a.id}`} value={a.qr_value} size={1024} className="hidden" />
               </td>
             </tr>
