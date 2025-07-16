@@ -130,6 +130,7 @@ export default function GAAssetList() {
               'remarks',
             ]}
           />
+
           <DownloadAllQRButton assets={displayedAssets} />
           {(role === 'admin' || role === 'staff') && (
             <button
