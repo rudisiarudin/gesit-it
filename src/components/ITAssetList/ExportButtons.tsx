@@ -7,28 +7,66 @@ import * as XLSX from 'xlsx';
 import { FileDown, Archive } from 'lucide-react';
 import ImportExcel from './ImportExcel';
 import { Asset } from '@/app/dashboard/it-assets/page';
+import { createClient } from '@supabase/supabase-js';
 
 type Props = {
   assets: Asset[];
   userId: string;
   fetchAssets: () => void;
-  role: string; // ✅ tambahkan role
+  role: string;
 };
 
 const ExportButtons: React.FC<Props> = ({ assets, userId, fetchAssets, role }) => {
-  const handleExportExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(assets);
+  const today = new Date().toISOString().split('T')[0];
+  const fileName = `it_assets_export_${today}.xlsx`;
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const fetchAllAssets = async (): Promise<Asset[]> => {
+    const { data, error } = await supabase
+      .from('it_assets')
+      .select('*'); // Tambahkan filter jika perlu, misalnya .eq('user_id', userId)
+
+    if (error) {
+      console.error('❌ Gagal fetch semua data:', error);
+      return [];
+    }
+
+    return data as Asset[];
+  };
+
+  const handleExportExcel = async () => {
+    const allAssets = await fetchAllAssets();
+    if (allAssets.length === 0) return;
+
+    const headers = Object.keys(allAssets[0]);
+
+    const data = allAssets.map((asset) =>
+      headers.reduce((acc, key) => {
+        acc[key] = asset[key as keyof Asset] ?? '';
+        return acc;
+      }, {} as Record<string, any>)
+    );
+
+    const ws = XLSX.utils.json_to_sheet(data, { header: headers });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'IT Assets');
+
     const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
     const blob = new Blob([buffer], { type: 'application/octet-stream' });
-    saveAs(blob, 'it_assets.xlsx');
+    saveAs(blob, fileName);
   };
 
   const handleDownloadAllQR = async () => {
+    const allAssets = await fetchAllAssets();
+    if (allAssets.length === 0) return;
+
     const zip = new JSZip();
 
-    for (const asset of assets) {
+    for (const asset of allAssets) {
       const canvas = document.getElementById(`qr-${asset.id}`) as HTMLCanvasElement;
       if (!canvas) continue;
 
@@ -40,7 +78,7 @@ const ExportButtons: React.FC<Props> = ({ assets, userId, fetchAssets, role }) =
     }
 
     const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, 'all-qr-codes.zip');
+    saveAs(content, `all_qr_codes_${today}.zip`);
   };
 
   return (
