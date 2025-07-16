@@ -33,53 +33,53 @@ export default function ITAssetForm({
     form.category?.toLowerCase().includes('pc');
 
   const generateId = async (category: string, company: string) => {
-  const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
-    company.toLowerCase().includes('gesit perkasa') ? 'GP' :
-    company.toLowerCase().includes('sircon') ? 'SI' :
-    company.toLowerCase().includes('alakasa') ? 'AI' :
-    company.toLowerCase().includes('gesit graha') ? 'GG' :
-    company.toLowerCase().includes('gesit intrade') ? 'GI' :
-    company.toLowerCase().includes('dharma') ? 'DAS' :
-    company.toLowerCase().includes('dinamika') ? 'DSM' : 'XX';
+    const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
+      company.toLowerCase().includes('gesit perkasa') ? 'GP' :
+      company.toLowerCase().includes('sircon') ? 'SI' :
+      company.toLowerCase().includes('alakasa') ? 'AI' :
+      company.toLowerCase().includes('gesit graha') ? 'GG' :
+      company.toLowerCase().includes('gesit intrade') ? 'GI' :
+      company.toLowerCase().includes('dharma') ? 'DAS' :
+      company.toLowerCase().includes('boc') ? 'BOC' :
+      company.toLowerCase().includes('dinamika') ? 'DSM' :
+      company.toLowerCase().includes('yayasan gesit peduli') ? 'YGPB' :
+      'XX';
 
-  const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
-    category.toLowerCase().includes('pc') ? 'PC' :
-    category.toLowerCase().includes('printer') ? 'PR' :
-    category.toLowerCase().includes('monitor') ? 'MN' :
-    category.toLowerCase().includes('proyektor') ? 'PJ' :
-    category.toLowerCase().includes('router') ? 'RT' :
-    category.toLowerCase().includes('harddisk') ? 'HD' :
-    category.toLowerCase().includes('switch') ? 'SW' :
-    category.toLowerCase().includes('access') ? 'AP' :
-    category.toLowerCase().includes('peripherals') ? 'PH' :
-    category.toLowerCase().includes('security') ? 'SC' :
-    category.toLowerCase().includes('tools') ? 'TL' : 'OT';
+    const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
+      category.toLowerCase().includes('pc') ? 'PC' :
+      category.toLowerCase().includes('printer') ? 'PR' :
+      category.toLowerCase().includes('monitor') ? 'MN' :
+      category.toLowerCase().includes('proyektor') ? 'PJ' :
+      category.toLowerCase().includes('router') ? 'RT' :
+      category.toLowerCase().includes('harddisk') ? 'HD' :
+      category.toLowerCase().includes('switch') ? 'SW' :
+      category.toLowerCase().includes('access') ? 'AP' :
+      category.toLowerCase().includes('peripherals') ? 'PH' :
+      category.toLowerCase().includes('security') ? 'SC' :
+      category.toLowerCase().includes('tools') ? 'TL' : 'OT';
 
-  const prefix = `${companyCode}-${catCode}-`;
+    const prefix = `${companyCode}-${catCode}-`;
 
-  const { data, error } = await supabase
-    .from('it_assets')
-    .select('id')
-    .like('id', `${prefix}%`);
+    const { data, error } = await supabase
+      .from('it_assets')
+      .select('id')
+      .like('id', `${prefix}%`);
 
-  if (error) throw new Error('Gagal mengambil ID');
+    if (error) throw new Error('Gagal mengambil ID');
 
-  // Ambil semua nomor urut yang sudah dipakai
-  const usedNumbers = (data || [])
-    .map((item) => item.id.split('-')[2])
-    .map((num) => parseInt(num, 10))
-    .filter((n) => !isNaN(n));
+    const usedNumbers = (data || [])
+      .map((item) => item.id.split('-')[2])
+      .map((num) => parseInt(num, 10))
+      .filter((n) => !isNaN(n));
 
-  // Cari nomor terkecil yang belum dipakai
-  let newNumber = 1;
-  while (usedNumbers.includes(newNumber)) {
-    newNumber++;
-  }
+    let newNumber = 1;
+    while (usedNumbers.includes(newNumber)) {
+      newNumber++;
+    }
 
-  const newSerial = String(newNumber).padStart(3, '0');
-  return `${prefix}${newSerial}`;
-};
-
+    const newSerial = String(newNumber).padStart(3, '0');
+    return `${prefix}${newSerial}`;
+  };
 
   const handleSubmit = async () => {
     if (!userId) {
@@ -186,6 +186,8 @@ export default function ITAssetForm({
                   <option value="Dharma Alumas Sakti">Dharma Alumas Sakti</option>
                   <option value="Dinamika Sejahtera Mandiri">Dinamika Sejahtera Mandiri</option>
                   <option value="Gesit Intrade">Gesit Intrade</option>
+                  <option value="Board of Commissioners">BoC</option>
+                  <option value="Yayasan Gesit Peduli Bangsa">Yayasan Gesit Peduli Bangsa</option>
                 </select>
 
                 {['Item Name', 'Brand', 'Serial Number', 'Status'].map((label) => {
