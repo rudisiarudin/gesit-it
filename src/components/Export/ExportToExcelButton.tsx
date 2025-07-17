@@ -5,9 +5,8 @@ import { FileSpreadsheet } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 interface ExportToExcelButtonProps {
-  // Salah satu dari dua ini harus disediakan
   data?: any[];               // mode lokal
-  tableName?: string;         // mode fetch
+  tableName?: string;         // mode fetch dari supabase
   columns?: string[];
   fileName?: string;
   tooltip?: string;
@@ -22,39 +21,80 @@ export default function ExportToExcelButton({
   columns,
   filters,
 }: ExportToExcelButtonProps) {
+  const fetchAllData = async (
+    supabase: any,
+    tableName: string,
+    filters?: { column: string; value: string | number }
+  ) => {
+    const limit = 1000;
+    let from = 0;
+    let to = limit - 1;
+    let allData: any[] = [];
+
+    while (true) {
+      let query = supabase.from(tableName).select('*').range(from, to);
+
+      if (filters) {
+        query = query.eq(filters.column, filters.value);
+      }
+
+      const { data: batch, error } = await query;
+
+      if (error) {
+        console.error('❌ Supabase fetch error:', {
+          from,
+          to,
+          tableName,
+          filters,
+          errorMessage: error.message,
+          rawError: error,
+        });
+        break;
+      }
+
+      if (!batch || batch.length === 0) break;
+
+      allData = allData.concat(batch);
+
+      if (batch.length < limit) break;
+
+      from += limit;
+      to += limit;
+    }
+
+    console.log('✅ Total data fetched:', allData.length);
+    return allData;
+  };
+
   const handleExport = async () => {
     let exportData: any[] = [];
 
-    // Mode 1: Lokal
+    // Mode Lokal
     if (Array.isArray(data)) {
       exportData = data;
     }
 
-    // Mode 2: Fetch dari Supabase
+    // Mode Supabase
     else if (typeof tableName === 'string') {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
-      let query = supabase.from(tableName).select('*').range(0, 9999);
-      if (filters) query = query.eq(filters.column, filters.value);
-
-      const { data: fetchedData, error } = await query;
-      if (error || !fetchedData) {
-        console.error('❌ Gagal fetch data dari Supabase:', error);
+      if (!supabase) {
+        console.error('❌ Supabase client gagal dibuat.');
         return;
       }
-      exportData = fetchedData;
+
+      exportData = await fetchAllData(supabase, tableName, filters);
     }
 
-    // Cek data
     if (!exportData || exportData.length === 0) {
       console.warn('⚠ Tidak ada data untuk diekspor.');
       return;
     }
 
-    // Filter kolom + No
+    // Format data + tambah kolom No
     const formatted = exportData.map((row, i) => {
       const obj: Record<string, any> = { No: i + 1 };
       (columns || Object.keys(row)).forEach((col) => {
@@ -63,10 +103,12 @@ export default function ExportToExcelButton({
       return obj;
     });
 
+    // Buat worksheet
     const worksheet = XLSX.utils.json_to_sheet(formatted);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
 
+    // Nama file pakai tanggal
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
     const mm = String(today.getMonth() + 1).padStart(2, '0');
