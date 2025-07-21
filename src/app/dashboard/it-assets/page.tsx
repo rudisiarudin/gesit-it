@@ -106,7 +106,7 @@ export default function ItAssetListPage() {
       {/* Filter/Search Bar */}
       <ITAssetFilterBar
         searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
+        onSearch={(term) => setSearchTerm(term)}
         onAdd={() => {
           setIsOpen(true);
           setIsEditing(false);
