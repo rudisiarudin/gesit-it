@@ -33,14 +33,16 @@ export default function ITAssetForm({
     form.category?.toLowerCase().includes('pc');
 
   const generateId = async (category: string, company: string) => {
-  const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
-    company.toLowerCase().includes('gesit perkasa') ? 'GP' :
-    company.toLowerCase().includes('sircon') ? 'SI' :
-    company.toLowerCase().includes('alakasa') ? 'AI' :
-    company.toLowerCase().includes('gesit graha') ? 'GG' :
-    company.toLowerCase().includes('gesit intrade') ? 'GI' :
-    company.toLowerCase().includes('dharma') ? 'DAS' :
-    company.toLowerCase().includes('dinamika') ? 'DSM' : 'XX';
+    const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
+      company.toLowerCase().includes('gesit perkasa') ? 'GP' :
+      company.toLowerCase().includes('sircon') ? 'SI' :
+      company.toLowerCase().includes('alakasa') ? 'AI' :
+      company.toLowerCase().includes('gesit graha') ? 'GG' :
+      company.toLowerCase().includes('gesit intrade') ? 'GI' :
+      company.toLowerCase().includes('dharma') ? 'DAS' :
+      company.toLowerCase().includes('dinamika') ? 'DSM' :
+      company.toLowerCase().includes('js capital') ? 'JIG' :
+      'XX';
 
     const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
       category.toLowerCase().includes('pc') ? 'PC' :
@@ -183,6 +185,7 @@ export default function ITAssetForm({
                   <option value="Dharma Alumas Sakti">Dharma Alumas Sakti</option>
                   <option value="Dinamika Sejahtera Mandiri">Dinamika Sejahtera Mandiri</option>
                   <option value="Gesit Intrade">Gesit Intrade</option>
+                  <option value="JS Capital">JS Capital</option>
                   <option value="Board of Commissioners">BoC</option>
                   <option value="Yayasan Gesit Peduli Bangsa">Yayasan Gesit Peduli Bangsa</option>
                 </select>
