@@ -1,11 +1,12 @@
 'use client';
 
 import { Dialog } from '@headlessui/react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Asset } from '@/app/dashboard/it-assets/page';
 import AdditionalSpecs from '@/components/ITAssetList/AdditionalSpecs';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface Props {
   isOpen: boolean;
@@ -28,6 +29,8 @@ export default function ITAssetForm({
   userId,
   fetchAssets,
 }: Props) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const isLaptopOrPC =
     form.category?.toLowerCase().includes('laptop') ||
     form.category?.toLowerCase().includes('pc');
@@ -81,75 +84,84 @@ export default function ITAssetForm({
   };
 
   const handleSubmit = async () => {
-    if (!userId) {
-      toast.error('User tidak ditemukan. Silakan login ulang.');
-      return;
-    }
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    const requiredFields = [
-      'item_name', 'category', 'brand', 'serial_number',
-      'status', 'location', 'user_assigned', 'company', 'department'
-    ];
+    try {
+      if (!userId) {
+        toast.error('User tidak ditemukan. Silakan login ulang.');
+        return;
+      }
 
-    const isValid = requiredFields.every((key) => {
-      const value = form[key as keyof typeof form];
-      return typeof value === 'string' && value.trim() !== '';
-    });
+      const requiredFields = [
+        'item_name', 'category', 'brand', 'serial_number',
+        'status', 'location', 'user_assigned', 'company', 'department'
+      ];
 
-    if (!isValid) {
-      toast.error('Harap lengkapi semua field wajib.');
-      return;
-    }
-
-    if (isLaptopOrPC) {
-      const specFields = ['storage', 'ram', 'vga', 'processor'];
-      const isSpecValid = specFields.every((key) => {
-        const val = form[key as keyof typeof form];
-        return typeof val === 'string' && val.trim() !== '';
+      const isValid = requiredFields.every((key) => {
+        const value = form[key as keyof typeof form];
+        return typeof value === 'string' && value.trim() !== '';
       });
 
-      if (!isSpecValid) {
-        toast.error('Harap lengkapi semua spesifikasi tambahan.');
+      if (!isValid) {
+        toast.error('Harap lengkapi semua field wajib.');
         return;
       }
-    }
 
-    const cleanedForm = Object.fromEntries(
-      Object.entries(form).map(([k, v]) => [k, v === '' ? null : v])
-    );
+      if (isLaptopOrPC) {
+        const specFields = ['storage', 'ram', 'vga', 'processor'];
+        const isSpecValid = specFields.every((key) => {
+          const val = form[key as keyof typeof form];
+          return typeof val === 'string' && val.trim() !== '';
+        });
 
-    let idToUse = editId;
-    if (!isEditing) {
-      try {
-        idToUse = await generateId(form.category, form.company!);
-      } catch (e: any) {
-        toast.error(e.message || 'Gagal membuat ID.');
+        if (!isSpecValid) {
+          toast.error('Harap lengkapi semua spesifikasi tambahan.');
+          return;
+        }
+      }
+
+      const cleanedForm = Object.fromEntries(
+        Object.entries(form).map(([k, v]) => [k, v === '' ? null : v])
+      );
+
+      let idToUse = editId;
+      if (!isEditing) {
+        try {
+          idToUse = await generateId(form.category, form.company!);
+        } catch (e: any) {
+          toast.error(e.message || 'Gagal membuat ID.');
+          return;
+        }
+      }
+
+      const qrValue = `${location.origin}/asset?id=${idToUse}`;
+
+      const payload = {
+        ...cleanedForm,
+        id: idToUse,
+        qr_value: qrValue,
+        user_id: userId,
+      };
+
+      const { error } = isEditing
+        ? await supabase.from('it_assets').update(payload).eq('id', editId!)
+        : await supabase.from('it_assets').insert([payload]);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        toast.error(isEditing ? 'Gagal update asset.' : 'Gagal menambah asset.');
         return;
       }
+
+      toast.success(isEditing ? 'Asset berhasil diupdate.' : 'Asset berhasil ditambahkan.');
+      onClose();
+      fetchAssets();
+    } catch (e: any) {
+      toast.error(e.message || 'Terjadi kesalahan.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const qrValue = `${location.origin}/asset?id=${idToUse}`;
-
-    const payload = {
-      ...cleanedForm,
-      id: idToUse,
-      qr_value: qrValue,
-      user_id: userId,
-    };
-
-    const { error } = isEditing
-      ? await supabase.from('it_assets').update(payload).eq('id', editId!)
-      : await supabase.from('it_assets').insert([payload]);
-
-    if (error) {
-      console.error('Supabase error:', error);
-      toast.error(isEditing ? 'Gagal update asset.' : 'Gagal menambah asset.');
-      return;
-    }
-
-    toast.success(isEditing ? 'Asset berhasil diupdate.' : 'Asset berhasil ditambahkan.');
-    onClose();
-    fetchAssets();
   };
 
   return (
@@ -168,7 +180,6 @@ export default function ITAssetForm({
 
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Kiri */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-700 mb-1">Company <span className="text-red-500">*</span></label>
                 <select
@@ -189,7 +200,6 @@ export default function ITAssetForm({
                   <option value="Board of Commissioners">BoC</option>
                   <option value="Yayasan Gesit Peduli Bangsa">Yayasan Gesit Peduli Bangsa</option>
                 </select>
-
                 {['Item Name', 'Brand', 'Serial Number', 'Status'].map((label) => {
                   const key = label.toLowerCase().replace(/ /g, '_');
                   return (
@@ -204,7 +214,6 @@ export default function ITAssetForm({
                     </div>
                   );
                 })}
-
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">Purchase Date</label>
                   <input
@@ -215,8 +224,6 @@ export default function ITAssetForm({
                   />
                 </div>
               </div>
-
-              {/* Kanan */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
                 <select
@@ -239,7 +246,6 @@ export default function ITAssetForm({
                   <option value="Tools">Tools</option>
                   <option value="Other">Other</option>
                 </select>
-
                 {['Location', 'User Assigned', 'Remarks', 'Department'].map((label) => {
                   const key = label.toLowerCase().replace(/ /g, '_');
                   return (
@@ -256,16 +262,23 @@ export default function ITAssetForm({
                 })}
               </div>
             </div>
-
-            {/* Tambahan spesifikasi */}
             {isLaptopOrPC && <AdditionalSpecs form={form} setForm={setForm} />}
-
             <div className="mt-6 flex justify-end">
               <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-semibold transition"
+                disabled={isSubmitting}
+                className={`${
+                  isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                } text-white px-6 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition`}
               >
-                {isEditing ? 'Update Asset' : 'Tambah Asset'}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{isEditing ? 'Menyimpan Perubahan...' : 'Menyimpan Data...'}</span>
+                  </>
+                ) : (
+                  isEditing ? 'Update Asset' : 'Tambah Asset'
+                )}
               </button>
             </div>
           </form>
