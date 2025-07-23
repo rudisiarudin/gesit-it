@@ -44,6 +44,7 @@ export default function ITAssetForm({
       company.toLowerCase().includes('gesit intrade') ? 'GI' :
       company.toLowerCase().includes('dharma') ? 'DAS' :
       company.toLowerCase().includes('dinamika') ? 'DSM' :
+       company.toLowerCase().includes('gesit foundation') ? 'YGP' :
       company.toLowerCase().includes('js capital') ? 'JIG' :
       'XX';
 
@@ -198,7 +199,7 @@ export default function ITAssetForm({
                   <option value="Gesit Intrade">Gesit Intrade</option>
                   <option value="JS Capital">JS Capital</option>
                   <option value="Board of Commissioners">BoC</option>
-                  <option value="Yayasan Gesit Peduli Bangsa">Yayasan Gesit Peduli Bangsa</option>
+                  <option value="Gesit Foundation">Gesit Foundation</option>
                 </select>
                 {['Item Name', 'Brand', 'Serial Number', 'Status'].map((label) => {
                   const key = label.toLowerCase().replace(/ /g, '_');
