@@ -40,6 +40,7 @@ export default function ITAssetForm({
       'gesit alumas': 'GA',
       'gesit perkasa': 'GP',
       'gesit graha': 'GG',
+      'gesit intrade': 'GI',
       'alakasa industrindo': 'AI',
       'dharma alumas sakti': 'DAS',
       'dinamika sejahtera mandiri': 'DSM',
@@ -203,6 +204,7 @@ export default function ITAssetForm({
                   <option value="Gesit Alumas">Gesit Alumas</option>
                   <option value="Gesit Perkasa">Gesit Perkasa</option>
                   <option value="Gesit Graha">Gesit Graha</option>
+                  <option value="Gesit Intrade">Gesit Intrade</option>
                   <option value="Alakasa Industrindo">Alakasa Industrindo</option>
                   <option value="Dharma Alumas Sakti">Dharma Alumas Sakti</option>
                   <option value="Dinamika Sejahtera Mandiri">Dinamika Sejahtera Mandiri</option>
