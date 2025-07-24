@@ -32,6 +32,27 @@ export interface Asset {
   purchase_date?: string;
 }
 
+// Dipindahkan ke atas agar bisa dipakai di inisialisasi useState
+const emptyForm: Omit<Asset, 'qr_value'> = {
+  id: '',
+  item_name: '',
+  category: '',
+  brand: '',
+  serial_number: '',
+  status: '',
+  location: '',
+  user_assigned: '',
+  remarks: '',
+  storage: '',
+  ram: '',
+  vga: '',
+  processor: '',
+  company: '',
+  department: '',
+  user_id: '',
+  purchase_date: '',
+};
+
 export default function ItAssetListPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,14 +75,17 @@ export default function ItAssetListPage() {
     const from = (currentPage - 1) * itemsPerPage;
     const to = from + itemsPerPage - 1;
 
-    const query = supabase
+    let query = supabase
       .from('it_assets')
       .select('*', { count: 'exact' })
       .range(from, to)
       .order('id');
 
     if (searchTerm) {
-      query.ilike('item_name', `%${searchTerm}%`);
+      const term = `%${searchTerm}%`;
+      query = query.or(
+        `item_name.ilike.${term},id.ilike.${term},category.ilike.${term},brand.ilike.${term},serial_number.ilike.${term},status.ilike.${term},location.ilike.${term},user_assigned.ilike.${term}`
+      );
     }
 
     const { data, error, count } = await query;
@@ -70,6 +94,7 @@ export default function ItAssetListPage() {
       setAssets(data);
       setTotalItems(count || 0);
     }
+
     setLoading(false);
   };
 
@@ -111,8 +136,12 @@ export default function ItAssetListPage() {
 
       {loading ? (
         <>
-          <div className="block md:hidden"><AssetSkeleton count={5} /></div>
-          <div className="hidden md:block"><AssetTableSkeleton rows={10} /></div>
+          <div className="block md:hidden">
+            <AssetSkeleton count={5} />
+          </div>
+          <div className="hidden md:block">
+            <AssetTableSkeleton rows={10} />
+          </div>
         </>
       ) : (
         <>
@@ -155,8 +184,20 @@ export default function ItAssetListPage() {
               </select>
             </div>
             <div className="space-x-2">
-              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Prev</button>
-              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Next</button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           </div>
         </>
@@ -189,23 +230,3 @@ export default function ItAssetListPage() {
     }
   }
 }
-
-const emptyForm: Omit<Asset, 'qr_value'> = {
-  id: '',
-  item_name: '',
-  category: '',
-  brand: '',
-  serial_number: '',
-  status: '',
-  location: '',
-  user_assigned: '',
-  remarks: '',
-  storage: '',
-  ram: '',
-  vga: '',
-  processor: '',
-  company: '',
-  department: '',
-  user_id: '',
-  purchase_date: '',
-};
