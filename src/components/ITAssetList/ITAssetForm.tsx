@@ -36,30 +36,41 @@ export default function ITAssetForm({
     form.category?.toLowerCase().includes('pc');
 
   const generateId = async (category: string, company: string) => {
-    const companyCode = company.toLowerCase().includes('gesit alumas') ? 'GA' :
-      company.toLowerCase().includes('gesit perkasa') ? 'GP' :
-      company.toLowerCase().includes('sircon') ? 'SI' :
-      company.toLowerCase().includes('alakasa') ? 'AI' :
-      company.toLowerCase().includes('gesit graha') ? 'GG' :
-      company.toLowerCase().includes('gesit intrade') ? 'GI' :
-      company.toLowerCase().includes('dharma') ? 'DAS' :
-      company.toLowerCase().includes('dinamika') ? 'DSM' :
-       company.toLowerCase().includes('gesit foundation') ? 'YGP' :
-      company.toLowerCase().includes('js capital') ? 'JIG' :
-      'XX';
+    const companyCodeMap: Record<string, string> = {
+      'gesit alumas': 'GA',
+      'gesit perkasa': 'GP',
+      'gesit graha': 'GG',
+      'alakasa industrindo': 'AI',
+      'dharma alumas sakti': 'DAS',
+      'dinamika sejahtera mandiri': 'DSM',
+      'js capital': 'JIG',
+      'gesit foundation': 'GF',
+    };
 
-    const catCode = category.toLowerCase().includes('laptop') ? 'LP' :
-      category.toLowerCase().includes('pc') ? 'PC' :
-      category.toLowerCase().includes('printer') ? 'PR' :
-      category.toLowerCase().includes('monitor') ? 'MN' :
-      category.toLowerCase().includes('proyektor') ? 'PJ' :
-      category.toLowerCase().includes('router') ? 'RT' :
-      category.toLowerCase().includes('harddisk') ? 'HD' :
-      category.toLowerCase().includes('switch') ? 'SW' :
-      category.toLowerCase().includes('access') ? 'AP' :
-      category.toLowerCase().includes('peripherals') ? 'PH' :
-      category.toLowerCase().includes('security') ? 'SC' :
-      category.toLowerCase().includes('tools') ? 'TL' : 'OT';
+    const categoryCodeMap: Record<string, string> = {
+      'laptop': 'LP',
+      'pc': 'PC',
+      'printer': 'PR',
+      'monitor': 'MN',
+      'proyektor': 'PJ',
+      'router': 'RT',
+      'storage': 'ST',
+      'switch': 'SW',
+      'access point': 'AP',
+      'peripherals': 'PH',
+      'security': 'SC',
+      'tools': 'TL',
+    };
+
+    const companyKey = Object.keys(companyCodeMap).find((key) =>
+      company.toLowerCase().includes(key)
+    );
+    const companyCode = companyKey ? companyCodeMap[companyKey] : 'XX';
+
+    const categoryKey = Object.keys(categoryCodeMap).find((key) =>
+      category.toLowerCase().includes(key)
+    );
+    const catCode = categoryKey ? categoryCodeMap[categoryKey] : 'OT';
 
     const prefix = `${companyCode}-${catCode}-`;
 
@@ -174,7 +185,7 @@ export default function ITAssetForm({
             <Dialog.Title className="text-lg md:text-xl font-semibold text-gray-800">
               {isEditing ? 'Edit Asset' : 'Tambah Asset'}
             </Dialog.Title>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Tutup Form">
               <X size={20} />
             </button>
           </div>
@@ -191,14 +202,11 @@ export default function ITAssetForm({
                   <option value="">Pilih Company</option>
                   <option value="Gesit Alumas">Gesit Alumas</option>
                   <option value="Gesit Perkasa">Gesit Perkasa</option>
-                  <option value="Sircon Investment">Sircon Investment</option>
-                  <option value="Alakasa Industrindo">Alakasa Industrindo</option>
                   <option value="Gesit Graha">Gesit Graha</option>
+                  <option value="Alakasa Industrindo">Alakasa Industrindo</option>
                   <option value="Dharma Alumas Sakti">Dharma Alumas Sakti</option>
                   <option value="Dinamika Sejahtera Mandiri">Dinamika Sejahtera Mandiri</option>
-                  <option value="Gesit Intrade">Gesit Intrade</option>
                   <option value="JS Capital">JS Capital</option>
-                  <option value="Board of Commissioners">BoC</option>
                   <option value="Gesit Foundation">Gesit Foundation</option>
                 </select>
                 {['Item Name', 'Brand', 'Serial Number', 'Status'].map((label) => {
@@ -239,7 +247,7 @@ export default function ITAssetForm({
                   <option value="Monitor">Monitor</option>
                   <option value="Proyektor">Proyektor</option>
                   <option value="Router">Router</option>
-                  <option value="Harddisk">Harddisk</option>
+                  <option value="Storage">Storage</option>
                   <option value="Switch">Switch</option>
                   <option value="Access Point">Access Point</option>
                   <option value="Peripherals">Peripherals</option>
