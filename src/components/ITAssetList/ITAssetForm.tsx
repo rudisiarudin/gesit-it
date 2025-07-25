@@ -59,7 +59,7 @@ export default function ITAssetForm({
       'switch': 'SW',
       'access point': 'AP',
       'peripherals': 'PH',
-      'security': 'SC',
+      'cctv': 'ct',
       'tools': 'TL',
     };
 
@@ -253,7 +253,7 @@ export default function ITAssetForm({
                   <option value="Switch">Switch</option>
                   <option value="Access Point">Access Point</option>
                   <option value="Peripherals">Peripherals</option>
-                  <option value="Security">Security</option>
+                  <option value="CCTV">CCTV</option>
                   <option value="Tools">Tools</option>
                   <option value="Other">Other</option>
                 </select>
