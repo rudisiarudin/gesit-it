@@ -59,7 +59,7 @@ export default function ITAssetForm({
       'switch': 'SW',
       'access point': 'AP',
       'peripherals': 'PH',
-      'cctv': 'ct',
+      'cctv': 'CT',
       'tools': 'TL',
     };
 
