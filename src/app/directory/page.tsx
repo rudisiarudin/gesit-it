@@ -1,5 +1,5 @@
 
-// app/directory/page.tsx
+import { Suspense } from 'react';
 import ExtensionDirectory from "@/components/ExtensionDirectory";
 
 export default function DirectoryPage() {
