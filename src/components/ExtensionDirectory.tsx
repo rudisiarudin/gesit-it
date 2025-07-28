@@ -1,9 +1,15 @@
-// components/ExtensionDirectory.tsx
 "use client";
 import { useEffect, useState } from "react";
 
+interface ExtensionItem {
+  "Nama User": string;
+  "Dept": string;
+  "Status": string;
+  "Extension Code": string;
+}
+
 export default function ExtensionDirectory() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<ExtensionItem[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [dept, setDept] = useState("");
@@ -22,7 +28,7 @@ export default function ExtensionDirectory() {
   useEffect(() => {
     fetch("/data/Extension.json")
       .then((res) => res.json())
-      .then((raw) => {
+      .then((raw: ExtensionItem[]) => {
         const cleaned = raw
           .filter((d) => d["Nama User"] && d["Extension Code"])
           .sort((a, b) => parseInt(a["Extension Code"]) - parseInt(b["Extension Code"]));
@@ -55,15 +61,28 @@ export default function ExtensionDirectory() {
 
       <div className={`${isSearching ? "flex flex-wrap justify-center" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"} gap-4 transition-all`}>
         {filtered.map((item, i) => (
-          <div key={i} className={`card border rounded shadow-sm text-sm p-3 bg-white space-y-1 ${isSearching ? "w-[340px]" : ""}`}>
+          <div
+            key={i}
+            className={`card relative border rounded shadow-sm text-sm p-3 bg-white space-y-1 ${
+              isSearching ? "w-[340px]" : ""
+            }`}
+          >
             <div className="absolute top-1 right-1">
-              <span className={`status-badge ${item["Status"] === "Aktif" ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-600"} text-xs px-2 py-0.5 rounded`}>
+              <span
+                className={`status-badge ${
+                  item["Status"].toLowerCase() === "aktif"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-gray-200 text-gray-600"
+                } text-xs px-2 py-0.5 rounded`}
+              >
                 {item["Status"]}
               </span>
             </div>
             <div className="name-one-line font-semibold mt-5">{item["Nama User"]}</div>
             <div className="dept-text text-gray-500">{item["Dept"]}</div>
-            <div className="ext text-right text-indigo-700 text-lg font-bold">Ext. {item["Extension Code"]}</div>
+            <div className="ext text-right text-indigo-700 text-lg font-bold">
+              Ext. {item["Extension Code"]}
+            </div>
           </div>
         ))}
       </div>
@@ -73,13 +92,25 @@ export default function ExtensionDirectory() {
           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg scale-100 opacity-100 transition">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Cari</h2>
-              <button onClick={() => { setShowModal(false); setSearch(""); setIsSearching(false); }} className="text-xl text-gray-600 hover:text-gray-800">&times;</button>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setSearch("");
+                  setIsSearching(false);
+                }}
+                className="text-xl text-gray-600 hover:text-gray-800"
+              >
+                &times;
+              </button>
             </div>
             <input
               autoFocus
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setIsSearching(e.target.value.trim() !== ""); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setIsSearching(e.target.value.trim() !== "");
+              }}
               placeholder="Nama atau Departemen..."
               className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400"
             />
