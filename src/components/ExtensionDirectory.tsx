@@ -20,7 +20,7 @@ export default function ExtensionDirectory() {
   });
 
   useEffect(() => {
-    fetch("/data/List Extension TGC.json")
+    fetch("/data/Extension.json")
       .then((res) => res.json())
       .then((raw) => {
         const cleaned = raw
