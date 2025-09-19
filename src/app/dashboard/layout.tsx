@@ -14,6 +14,7 @@ import {
   Cpu,
   Package,
   Users,
+  Boxes, // ✅ ikon baru untuk Asset GBP
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -41,10 +42,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         }
         const userId = authData.user.id;
 
-        // Ambil data user_profiles berdasarkan id user
         const { data: profileData, error: profileError } = await supabase
           .from("user_profiles")
-          .select("full_name, role, groups") // asumsi kolom groups adalah array text di tabel
+          .select("full_name, role, groups")
           .eq("id", userId)
           .single();
 
@@ -58,7 +58,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         setUserRole(profileData.role || null);
         setUserGroups(profileData.groups || []);
 
-        // Buat initials
         const initials = (profileData.full_name || "User")
           .split(" ")
           .map((w: string) => w[0])
@@ -117,9 +116,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       icon: <Package size={18} />,
       groups: ["GA"],
     },
+    {
+      href: "/dashboard/gbp-assets",
+      label: "GBP Asset",
+      icon: <Boxes size={18} />, // ✅ beda ikon dari GA Asset
+      groups: ["GBP"],
+    },
   ];
 
-  // User Management untuk admin role
   if (userRole === "admin") {
     menuItems.push({
       href: "/dashboard/users",
@@ -129,7 +133,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     });
   }
 
-  // Filter menu berdasarkan grup user (userGroups adalah array)
   const filteredMenuItems = menuItems.filter((item) =>
     item.groups.some((g) => userGroups.includes(g))
   );
@@ -157,27 +160,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <X size={22} />
           </button>
         </div>
+
         <nav className="mt-4 flex flex-col space-y-1 px-4">
-          {filteredMenuItems.map(({ href, label, icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={clsx(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition",
-                pathname === href
-                  ? "bg-blue-100 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              {icon}
-              {label}
-            </Link>
-          ))}
+          {filteredMenuItems.map(({ href, label, icon }) => {
+            const isActive = pathname === href || pathname.startsWith(href + "/");
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={clsx(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition",
+                  isActive ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100"
+                )}
+                onClick={() => setSidebarOpen(false)}
+              >
+                {icon}
+                {label}
+              </Link>
+            );
+          })}
         </nav>
       </aside>
 
-      {/* Overlay */}
+      {/* Overlay mobile */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-30 md:hidden"
@@ -185,7 +190,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         />
       )}
 
-      {/* Content + footer wrapper */}
+      {/* Content */}
       <div className="flex-1 flex flex-col min-h-screen pl-0 md:pl-64">
         <header className="h-16 bg-white border-b px-4 md:px-6 flex items-center justify-between shadow-sm">
           <button
@@ -230,7 +235,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">{children}</main>
 
-        {/* Footer */}
         <footer className="h-12 bg-white border-t text-center text-gray-600 text-xs flex items-center justify-center select-none">
           &copy; {new Date().getFullYear()} IT Gesit. All rights reserved.
         </footer>
