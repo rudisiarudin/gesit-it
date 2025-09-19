@@ -86,7 +86,7 @@ export default function AssetTableGBP({
     ctx.font = '500 20px sans-serif';
     ctx.fillText('PROPERTY OF', W / 2, 30);
     ctx.font = '700 20px sans-serif';
-    ctx.fillText('PT GESIT BUMI PERSADA', W / 2, 58);  // ✅ aman krn tipe sudah punya company
+    ctx.fillText('PT GESIT BUMI PERSADA', W / 2, 58);
 
     // footer
     ctx.fillStyle = '#000';
@@ -113,6 +113,23 @@ export default function AssetTableGBP({
     link.click();
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Active':
+        return 'bg-green-100 text-green-700';
+      case 'In Use':
+        return 'bg-blue-100 text-blue-700';
+      case 'Spare':
+        return 'bg-gray-100 text-gray-700';
+      case 'Broken':
+        return 'bg-red-100 text-red-700';
+      case 'Disposed':
+        return 'bg-yellow-100 text-yellow-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="table-auto w-full text-xs border-collapse">
@@ -120,13 +137,12 @@ export default function AssetTableGBP({
           <tr>
             <th className="p-2 text-left">No</th>
             <th className="p-2 text-left max-w-[150px] truncate">Item</th>
+            <th className="p-2 text-left">Asset ID</th>
             <th className="p-2 text-left max-w-[120px] truncate">Category</th>
             <th className="p-2 text-left">Brand</th>
-            <th className="p-2 text-left">ID</th>
             <th className="p-2 text-left">Status</th>
             <th className="p-2 text-left max-w-[120px] truncate">Location</th>
             <th className="p-2 text-left">User</th>
-            <th className="p-2 text-left">Condition</th>
             <th className="p-2 text-left">Purchase Date</th>
             <th className="p-2 text-left">Actions</th>
           </tr>
@@ -136,13 +152,16 @@ export default function AssetTableGBP({
             <tr key={a.id} className="border-t">
               <td className="p-2">{(currentPage - 1) * itemsPerPage + i + 1}</td>
               <td className="p-2 max-w-[150px] truncate">{a.item_name}</td>
+              <td className="p-2">{a.id}</td>
               <td className="p-2 max-w-[120px] truncate">{a.category}</td>
               <td className="p-2">{a.brand || '-'}</td>
-              <td className="p-2">{a.id}</td>
-              <td className="p-2">{a.status}</td>
+              <td className="p-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(a.status)}`}>
+                  {a.status}
+                </span>
+              </td>
               <td className="p-2 max-w-[120px] truncate">{a.location}</td>
               <td className="p-2">{a.user_assigned || '-'}</td>
-              <td className="p-2">{a.remarks || '-'}</td>
               <td className="p-2">
                 {a.purchase_date ? format(new Date(a.purchase_date), 'dd-MM-yyyy') : '-'}
               </td>

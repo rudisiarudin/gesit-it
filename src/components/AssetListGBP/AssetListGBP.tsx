@@ -9,7 +9,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import AssetFormModalGBP, { AssetGBP } from './AssetFormModalGBP';
 import AssetTableGBP from './AssetTableGBP';
 
-import { Plus, FileSpreadsheet } from 'lucide-react'; // pakai icon Excel dari lucide-react
+import { Plus, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { createClient } from '@supabase/supabase-js';
 
@@ -51,6 +51,9 @@ export default function AssetListGBP() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // 🔽 Tambahan filter category
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+
   // session check
   useEffect(() => {
     const run = async () => {
@@ -84,9 +87,17 @@ export default function AssetListGBP() {
 
   // filter
   const filteredAssets = useMemo(() => {
+    let list = assets;
+
+    // filter category
+    if (categoryFilter) {
+      list = list.filter((a) => a.category === categoryFilter);
+    }
+
+    // filter search
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return assets;
-    return assets.filter((a) => {
+    if (!q) return list;
+    return list.filter((a) => {
       const pool = [
         a.id,
         a.item_name,
@@ -103,7 +114,7 @@ export default function AssetListGBP() {
         .filter((v) => typeof v === 'string')
         .some((v) => (v as string).toLowerCase().includes(q));
     });
-  }, [assets, searchTerm]);
+  }, [assets, searchTerm, categoryFilter]);
 
   // paging
   const totalPages = Math.max(1, Math.ceil(filteredAssets.length / itemsPerPage));
@@ -114,7 +125,7 @@ export default function AssetListGBP() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+  }, [searchTerm, itemsPerPage, categoryFilter]);
 
   // actions
   const openCreate = () => {
@@ -126,19 +137,8 @@ export default function AssetListGBP() {
 
   const handleEdit = (asset: AssetGBP) => {
     setForm({
-      ...emptyFormGBP,     // isi default termasuk company
+      ...emptyFormGBP,
       ...asset,
-      brand: asset.brand ?? null,
-      serial_number: asset.serial_number ?? null,
-      user_assigned: asset.user_assigned ?? null,
-      department: asset.department ?? null,
-      purchase_date: asset.purchase_date ?? null,
-      remarks: asset.remarks ?? null,
-      processor: asset.processor ?? null,
-      ram: asset.ram ?? null,
-      storage: asset.storage ?? null,
-      vga: asset.vga ?? null,
-      qr_value: asset.qr_value ?? null,
     });
     setEditId(asset.id!);
     setIsEditing(true);
@@ -197,23 +197,43 @@ export default function AssetListGBP() {
     XLSX.writeFile(wb, `asset_gbp_export_${today}.xlsx`);
   };
 
+  // ambil daftar kategori unik
+  const categories = useMemo(() => {
+    return Array.from(new Set(assets.map((a) => a.category).filter(Boolean)));
+  }, [assets]);
+
   return (
     <div className="space-y-4">
       {/* Title */}
-      <h1 className="text-2xl font-bold">Asset GBP List</h1>
+      <h1 className="text-2xl font-bold">Asset Gesit Bumi Persada List</h1>
 
-      {/* Top toolbar: search kiri, tombol kanan */}
-      <div className="flex items-center justify-between gap-3">
-        <input
-          type="text"
-          placeholder="Search any field (item, brand, SN, status...)"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="border px-4 py-2 rounded w-64"
-        />
+      {/* Top toolbar: search kiri, filter category, tombol kanan */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            placeholder="Search any field (item, brand, SN, status...)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border px-4 py-2 rounded w-64"
+          />
+
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="border px-3 py-2 rounded"
+          >
+            <option value="">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="flex items-center gap-2">
-          {/* Export (ikon Excel dari lucide-react) */}
+          {/* Export Excel */}
           <button
             onClick={exportExcel}
             title="Export Excel"
@@ -222,7 +242,7 @@ export default function AssetListGBP() {
             <FileSpreadsheet size={20} className="text-green-600" />
           </button>
 
-          {/* Add Asset (hijau) */}
+          {/* Add Asset */}
           {(role === 'admin' || role === 'staff') && (
             <button
               onClick={openCreate}
