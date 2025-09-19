@@ -1,39 +1,50 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
   Activity as ActivityIcon,
   CheckCircle,
-  Loader2,
-  Monitor,
-  Package,
-  Clock,
-  Users,
-  Laptop,
-  Printer,
-  Cpu,
-  FileText,
   CalendarCheck,
+  FileText,
+  Laptop,
+  Cpu,
+  Monitor,
+  Printer,
+  Package,
+  Users,
+  Clock,
 } from 'lucide-react';
 import { format } from 'date-fns';
+
+type Asset = { category?: string | null };
 
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [sessionChecked, setSessionChecked] = useState(false);
 
-  const [total, setTotal] = useState(0);
-  const [completed, setCompleted] = useState(0);
-  const [inProgress, setInProgress] = useState(0);
-  const [totalITAssets, setTotalITAssets] = useState(0);
-  const [totalGAAssets, setTotalGAAssets] = useState(0);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [todayActivities, setTodayActivities] = useState<any[]>([]);
+  // KPI – aktivitas & rencana
+  const [activitiesToday, setActivitiesToday] = useState<any[]>([]);
+  const [completedToday, setCompletedToday] = useState(0);
   const [weeklyPlans, setWeeklyPlans] = useState(0);
   const [purchasePlans, setPurchasePlans] = useState(0);
 
+  // Users & GA
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalGAAssets, setTotalGAAssets] = useState(0);
+
+  // Asset IT/GBP (untuk filter)
+  const [assetsIT, setAssetsIT] = useState<Asset[]>([]);
+  const [assetsGBP, setAssetsGBP] = useState<Asset[]>([]);
+  const [assetFilter, setAssetFilter] = useState<'IT' | 'GBP'>('IT');
+
+  // Totals
+  const [totalITAssets, setTotalITAssets] = useState(0);
+  const [totalGBPAssets, setTotalGBPAssets] = useState(0);
+
+  // Breakdown (ikut filter)
   const [laptopCount, setLaptopCount] = useState(0);
   const [pcCount, setPCCount] = useState(0);
   const [monitorCount, setMonitorCount] = useState(0);
@@ -43,17 +54,19 @@ export default function DashboardPage() {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) router.replace('/login');
-      else fetchDashboardStats();
+      else await fetchStats();
       setSessionChecked(true);
     };
     checkSession();
   }, []);
 
-  const fetchDashboardStats = async () => {
+  const fetchStats = async () => {
     const today = new Date().toISOString().split('T')[0];
+
     const [
       { data: actData },
       { data: itAssets },
+      { data: gbpAssets },
       { data: gaAssets },
       { data: users },
       { data: plansData },
@@ -61,43 +74,81 @@ export default function DashboardPage() {
     ] = await Promise.all([
       supabase.from('activities').select('*').gte('created_at', `${today}T00:00:00`),
       supabase.from('it_assets').select('*'),
+      supabase.from('asset_gbp').select('*'),     // <- gunakan tabel asset_gbp
       supabase.from('ga_assets').select('id'),
       supabase.from('user_profiles').select('id'),
       supabase.from('plans').select('id'),
       supabase.from('purchase_plans').select('id'),
     ]);
 
-    if (actData) {
-      setTodayActivities(actData);
-      setTotal(actData.length);
-      const completedCount = actData.filter((a) => a.status === 'Completed').length;
-      setCompleted(completedCount);
-      setInProgress(actData.length - completedCount);
-    }
+    // Aktivitas IT (hari ini)
+    const acts = actData || [];
+    setActivitiesToday(acts);
+    setCompletedToday(acts.filter((a: any) => a.status === 'Completed').length);
 
-    if (itAssets) {
-      setTotalITAssets(itAssets.length);
-      setLaptopCount(itAssets.filter((a) => a.category === 'Laptop').length);
-      setPCCount(itAssets.filter((a) => a.category === 'PC').length);
-      setMonitorCount(itAssets.filter((a) => a.category === 'Monitor').length);
-      setPrinterCount(itAssets.filter((a) => a.category === 'Printer').length);
-    }
-
-    setTotalGAAssets(gaAssets?.length || 0);
+    // Users, GA, Plans
     setTotalUsers(users?.length || 0);
+    setTotalGAAssets(gaAssets?.length || 0);
     setWeeklyPlans(plansData?.length || 0);
     setPurchasePlans(purchaseData?.length || 0);
+
+    // IT / GBP assets
+    const itList = (itAssets as Asset[]) || [];
+    const gbpList = (gbpAssets as Asset[]) || [];
+    setAssetsIT(itList);
+    setAssetsGBP(gbpList);
+    setTotalITAssets(itList.length);
+    setTotalGBPAssets(gbpList.length);
+
+    // default breakdown pakai IT
+    recomputeBreakdown(itList);
+
     setLoading(false);
   };
 
-  const Card = ({ icon: Icon, title, value, color }: { icon: any; title: string; value: number; color: string }) => (
-    <div className="flex items-center gap-4 p-4 rounded-2xl shadow bg-white border hover:shadow-lg transition-transform hover:scale-[1.01]">
-      <div className={`p-3 rounded-full bg-${color}-100 text-${color}-700`}>
-        <Icon size={24} />
-      </div>
-      <div>
-        <p className="text-xs text-gray-500">{title}</p>
-        <p className="text-xl font-semibold text-gray-900">{value}</p>
+  const recomputeBreakdown = (list: Asset[]) => {
+    const cat = (s?: string | null) => (s || '').toLowerCase();
+    setLaptopCount(list.filter(a => cat(a.category).includes('laptop')).length);
+    setPCCount(list.filter(a => {
+      const c = cat(a.category);
+      return c.includes('pc') || c.includes('computer');
+    }).length);
+    setMonitorCount(list.filter(a => cat(a.category).includes('monitor')).length);
+    setPrinterCount(list.filter(a => cat(a.category).includes('printer')).length);
+  };
+
+  const onChangeAssetFilter = (val: 'IT' | 'GBP') => {
+    setAssetFilter(val);
+    recomputeBreakdown(val === 'IT' ? assetsIT : assetsGBP);
+  };
+
+  // ---- UI helpers: kelas statis (anti purge) ----
+  const tones = {
+    blue:   { card: 'bg-gradient-to-br from-blue-50 to-blue-100',       icon: 'bg-blue-600 text-white' },
+    green:  { card: 'bg-gradient-to-br from-green-50 to-green-100',     icon: 'bg-green-600 text-white' },
+    sky:    { card: 'bg-gradient-to-br from-sky-50 to-sky-100',         icon: 'bg-sky-600 text-white' },
+    purple: { card: 'bg-gradient-to-br from-purple-50 to-purple-100',   icon: 'bg-purple-600 text-white' },
+    pink:   { card: 'bg-gradient-to-br from-pink-50 to-pink-100',       icon: 'bg-pink-600 text-white' },
+    indigo: { card: 'bg-gradient-to-br from-indigo-50 to-indigo-100',   icon: 'bg-indigo-600 text-white' },
+    teal:   { card: 'bg-gradient-to-br from-teal-50 to-teal-100',       icon: 'bg-teal-600 text-white' },
+    cyan:   { card: 'bg-gradient-to-br from-cyan-50 to-cyan-100',       icon: 'bg-cyan-600 text-white' },
+    orange: { card: 'bg-gradient-to-br from-orange-50 to-orange-100',   icon: 'bg-orange-600 text-white' },
+    rose:   { card: 'bg-gradient-to-br from-rose-50 to-rose-100',       icon: 'bg-rose-600 text-white' },
+    emerald:{ card: 'bg-gradient-to-br from-emerald-50 to-emerald-100', icon: 'bg-emerald-600 text-white' },
+  } as const;
+
+  const Card = ({
+    title, value, icon: Icon, tone,
+  }: { title: string; value: number; icon: any; tone: keyof typeof tones }) => (
+    <div className={`relative rounded-2xl p-5 shadow-md ${tones[tone].card} hover:shadow-xl transition`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        </div>
+        <div className={`p-3 rounded-full ${tones[tone].icon}`}>
+          <Icon size={20} />
+        </div>
       </div>
     </div>
   );
@@ -105,9 +156,7 @@ export default function DashboardPage() {
   if (!sessionChecked || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500 text-lg flex items-center gap-2">
-          <Loader2 className="animate-spin" /> Loading dashboard...
-        </div>
+        <p className="text-gray-500">Loading dashboard...</p>
       </div>
     );
   }
@@ -116,53 +165,72 @@ export default function DashboardPage() {
     <main className="min-h-screen px-4 py-6 md:px-8 bg-gray-50">
       <div className="max-w-7xl mx-auto space-y-10">
 
-        <header className="space-y-1">
+        {/* Header */}
+        <header>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-sm text-gray-500">Welcome back. Here's a quick overview.</p>
+          <p className="text-sm text-gray-500">Welcome back 👋 Here's an overview.</p>
         </header>
 
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <Card icon={ActivityIcon} title="Activities Today" value={total} color="blue" />
-          <Card icon={CheckCircle} title="Completed" value={completed} color="green" />
-          <Card icon={CalendarCheck} title="Weekly Plans" value={weeklyPlans} color="sky" />
-          <Card icon={FileText} title="Purchase Plans" value={purchasePlans} color="purple" />
+        {/* KPI: Activity IT + Completed + Weekly + Purchase */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <Card title="Activity IT (Today)" value={activitiesToday.length} icon={ActivityIcon} tone="blue" />
+          <Card title="Completed (Today)" value={completedToday} icon={CheckCircle} tone="green" />
+          <Card title="Weekly Plans" value={weeklyPlans} icon={CalendarCheck} tone="sky" />
+          <Card title="Purchase Plans" value={purchasePlans} icon={FileText} tone="purple" />
         </section>
 
+        {/* Asset Breakdown + Filter */}
         <section>
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">IT Asset Summary</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card icon={Laptop} title="Laptop" value={laptopCount} color="cyan" />
-            <Card icon={Cpu} title="PC" value={pcCount} color="emerald" />
-            <Card icon={Monitor} title="Monitor" value={monitorCount} color="orange" />
-            <Card icon={Printer} title="Printer" value={printerCount} color="rose" />
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-700">Asset Breakdown</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Source:</span>
+              <select
+                value={assetFilter}
+                onChange={(e) => onChangeAssetFilter(e.target.value as 'IT' | 'GBP')}
+                className="border rounded-lg px-3 py-1 text-sm"
+              >
+                <option value="IT">IT Assets ({totalITAssets})</option>
+                <option value="GBP">GBP Assets ({totalGBPAssets})</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <Card title="Laptop"  value={laptopCount}  icon={Laptop}  tone="cyan" />
+            <Card title="PC"      value={pcCount}      icon={Cpu}     tone="indigo" />
+            <Card title="Monitor" value={monitorCount} icon={Monitor} tone="orange" />
+            <Card title="Printer" value={printerCount} icon={Printer} tone="rose" />
           </div>
         </section>
 
+        {/* General Totals (opsional, tetap ringan) */}
         <section>
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">General Info</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Card icon={Monitor} title="Total IT Assets" value={totalITAssets} color="purple" />
-            <Card icon={Package} title="Total GA Assets" value={totalGAAssets} color="indigo" />
-            <Card icon={Users} title="Users" value={totalUsers} color="pink" />
+          <h2 className="text-lg font-semibold text-gray-700 mb-3">General Info</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <Card title="Total IT Assets"  value={totalITAssets}  icon={Monitor} tone="purple" />
+            <Card title="Total GBP Assets"  value={totalGBPAssets}  icon={Package} tone="teal" />
+            <Card title="Total Users"      value={totalUsers}      icon={Users}   tone="pink" />
           </div>
         </section>
 
-        {todayActivities.length > 0 && (
+        {/* Today's Activities timeline */}
+        {activitiesToday.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">Today's Activities</h2>
-            <div className="border-l border-gray-300 pl-4 space-y-4">
-              {todayActivities.slice(0, 4).map((a, i) => (
+            <h2 className="text-lg font-semibold text-gray-700 mb-3">Today's Activities</h2>
+            <div className="border-l-2 border-blue-300 pl-4 space-y-4">
+              {activitiesToday.slice(0, 5).map((a, i) => (
                 <div key={i} className="relative pl-4">
-                  <span className="absolute -left-[10px] top-1 w-3 h-3 bg-blue-600 rounded-full"></span>
-                  <div className="bg-white p-4 rounded-lg border shadow-sm">
-                    <div className="text-sm text-gray-700">
+                  <span className="absolute -left-[10px] top-2 w-3 h-3 bg-blue-600 rounded-full"></span>
+                  <div className="bg-white p-4 rounded-xl border shadow-sm">
+                    <p className="text-sm text-gray-700">
                       <span className="font-medium text-blue-600">{a.it}</span> – {a.activity_name}
-                    </div>
-                    <div className="text-xs text-gray-400 italic">{a.category}</div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    </p>
+                    <p className="text-xs text-gray-400">{a.category}</p>
+                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                       <Clock size={14} className="text-gray-400" />
                       {format(new Date(a.created_at), 'dd-MMM-yyyy HH:mm')}
-                    </div>
+                    </p>
                   </div>
                 </div>
               ))}
