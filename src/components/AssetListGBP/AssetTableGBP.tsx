@@ -86,7 +86,7 @@ export default function AssetTableGBP({
     ctx.font = '500 20px sans-serif';
     ctx.fillText('PROPERTY OF', W / 2, 30);
     ctx.font = '700 20px sans-serif';
-    ctx.fillText(a.company || 'PT GESIT BUMI PERSADA', W / 2, 58); // ✅ aman krn tipe sudah punya company
+    ctx.fillText('PT GESIT BUMI PERSADA', W / 2, 58);  // ✅ aman krn tipe sudah punya company
 
     // footer
     ctx.fillStyle = '#000';

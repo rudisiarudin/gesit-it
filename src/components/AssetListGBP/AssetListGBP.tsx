@@ -30,7 +30,6 @@ const emptyFormGBP: AssetGBP = {
   storage: null,
   vga: null,
   qr_value: null,
-  company: 'PT GESIT BUMI PERSADA', // ✅ default supaya QR header ada nama perusahaan
 };
 
 export default function AssetListGBP() {
@@ -140,7 +139,6 @@ export default function AssetListGBP() {
       storage: asset.storage ?? null,
       vga: asset.vga ?? null,
       qr_value: asset.qr_value ?? null,
-      company: asset.company ?? emptyFormGBP.company, // ✅ aman
     });
     setEditId(asset.id!);
     setIsEditing(true);

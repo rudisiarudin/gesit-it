@@ -26,8 +26,6 @@ export interface AssetGBP {
   vga?: string | null;
   // qr
   qr_value?: string | null;
-  // company fix
-  company?: string | null;
   // audit
   created_at?: string;
   updated_at?: string;
@@ -73,20 +71,23 @@ async function generateAssetCode(category: string) {
   if (error) throw new Error('Gagal ambil nomor urut');
 
   const usedNumbers = (data || [])
-  .map((r: any) => {
-    const last = String(r.id || '').split('-').pop();
-    return last ? parseInt(last, 10) : NaN; // kalau kosong return NaN
-  })
-  .filter((n) => Number.isFinite(n));
-
+    .map((r: any) => {
+      const last = String(r.id || '').split('-').pop();
+      return last ? parseInt(last, 10) : NaN;
+    })
+    .filter((n) => Number.isFinite(n));
 
   let next = 1;
   while (usedNumbers.includes(next)) next++;
   return `${prefix}${String(next).padStart(3, '0')}`;
 }
 
-const toNull = (v: unknown) =>
-  typeof v === 'string' ? (v.trim() === '' ? null : v) : v ?? null;
+// ---- FIX: return selalu string | null, cocok utk semua field optional string
+const toNull = (v: unknown): string | null => {
+  if (typeof v === 'string') return v.trim() === '' ? null : v;
+  if (v === undefined || v === null) return null;
+  return String(v);
+};
 
 export default function AssetFormModalGBP({
   isOpen,
@@ -140,18 +141,17 @@ export default function AssetFormModalGBP({
         category: form.category,
         status: form.status,
         location: form.location,
-        brand: toNull(form.brand) as string | null,
-        serial_number: toNull(form.serial_number) as string | null,
-        user_assigned: toNull(form.user_assigned) as string | null,
-        department: toNull(form.department) as string | null,
-        purchase_date: toNull(form.purchase_date) as string | null,
-        remarks: toNull(form.remarks) as string | null,
-        processor: toNull(form.processor) as string | null,
-        ram: toNull(form.ram) as string | null,
-        storage: toNull(form.storage) as string | null,
-        vga: toNull(form.vga) as string | null,
+        brand: toNull(form.brand),
+        serial_number: toNull(form.serial_number),
+        user_assigned: toNull(form.user_assigned),
+        department: toNull(form.department),
+        purchase_date: toNull(form.purchase_date),
+        remarks: toNull(form.remarks),
+        processor: toNull(form.processor),
+        ram: toNull(form.ram),
+        storage: toNull(form.storage),
+        vga: toNull(form.vga),
         qr_value,
-        company: 'PT GESIT BUMI PERSADA', // ✅ fixed default
       };
 
       if (isEditing && editId) {
