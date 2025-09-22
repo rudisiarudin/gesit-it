@@ -9,7 +9,7 @@ import { RotateCcw, Slash, AlertCircle } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import { usePagination } from '@/hooks/usePagination';
 
-const ALL_GROUPS = ['IT', 'GA', 'HR', 'Finance', 'BoC'];
+const ALL_GROUPS = ['IT', 'GA', 'HR', 'Finance', 'BoC', 'GBP'];
 
 type UserProfile = {
   id: string;
@@ -280,3 +280,4 @@ export default function UserManagementPage() {
     </div>
   );
 }
+
