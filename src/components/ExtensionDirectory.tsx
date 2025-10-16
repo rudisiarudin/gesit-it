@@ -1,7 +1,6 @@
 "use client";
 import React, { useMemo, useState, ChangeEvent } from "react";
 
-// Type definitions
 interface Extension {
   id: number;
   name: string;
@@ -139,61 +138,112 @@ const initialExtensions: Extension[] = [
   { id: 125, name: "Cigar Room",      dept: "Common Rooms", ext: "805", notes: "" },
 ];
 
+function getFloor(dept: string, notes: string) {
+  if (/26/i.test(notes) || /DSM/i.test(dept)) return 26;
+  if (/27/i.test(notes) || /Common/i.test(dept)) return 27;
+  return null;
+}
+
+function classNames(...classes: (string | false | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function Badge({ label, color }: { label: string; color: string }) {
+  return (
+    <span className={`px-2 py-0.5 text-xs font-semibold rounded-lg border ${color}`}>
+      {label}
+    </span>
+  );
+}
 
 function ExtensionCard({ item }: { item: Extension }) {
   const initial = item.name.charAt(0).toUpperCase();
+  const floor = getFloor(item.dept, item.notes);
+
+  const frameColor =
+    floor === 27
+      ? "border-indigo-200 ring-1 ring-indigo-50"
+      : floor === 26
+      ? "border-emerald-200 ring-1 ring-emerald-50"
+      : "border-indigo-100";
+
+  const barColor =
+    floor === 27
+      ? "bg-indigo-400"
+      : floor === 26
+      ? "bg-emerald-400"
+      : "bg-indigo-300";
+
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-xl border-b-4 border-indigo-500 transition duration-300 transform hover:shadow-2xl h-36">
-      {/* Top Section: Avatar, Name, and Extension Badge */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center w-full max-w-[70%]">
-          {/* Avatar (Circle with Initial) */}
-          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg mr-4 border-2 border-indigo-300">
+    <div
+      className={classNames(
+        "relative bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border",
+        frameColor
+      )}
+    >
+      <div className={classNames("absolute left-0 right-0 top-0 h-1 rounded-t-2xl", barColor)} />
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center min-w-0 gap-4">
+          <div className="w-12 h-12 rounded-full bg-indigo-600 text-white font-bold text-xl grid place-items-center shadow-sm border-2 border-indigo-300">
             {initial}
           </div>
-          {/* Name and Department */}
-          <div className="overflow-hidden">
-            <h2 className="text-xl font-bold text-gray-800 leading-snug truncate" title={item.name}>
+          <div className="min-w-0">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 truncate" title={item.name}>
               {item.name}
             </h2>
-            <p className="text-sm text-gray-500 mt-1 truncate" title={item.dept}>
+            <p className="text-sm text-gray-500 truncate" title={item.dept}>
               {item.dept}
             </p>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {item.notes && !/DSM|Common/i.test(item.notes) && (
+                <Badge
+                  label={item.notes}
+                  color="bg-slate-100 text-slate-700 border-slate-200"
+                />
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Static Extension Display */}
         <span
           title="Extension Number"
-          className="flex-shrink-0 px-3 py-2 bg-yellow-100 text-yellow-700 font-extrabold text-2xl rounded-xl shadow-inner border border-yellow-200 self-center flex items-center space-x-2"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xl font-extrabold bg-amber-50 text-amber-700 border-amber-200"
         >
-          {/* Minimal Phone Icon SVG (Handset style) */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-yellow-600"
-            width="24"
-            height="24"
+            className="h-5 w-5"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            aria-hidden
           >
             <path d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6l1.5-2.5 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
           </svg>
           <span>{item.ext}</span>
         </span>
       </div>
+
+      {floor && (
+        <div
+          className={classNames(
+            "mt-3 text-xs font-medium text-center rounded-lg py-1",
+            floor === 27
+              ? "bg-indigo-50 text-indigo-700"
+              : "bg-emerald-50 text-emerald-700"
+          )}
+        >
+          Located on {floor}th Floor
+        </div>
+      )}
     </div>
   );
 }
 
 export default function OfficeExtensionsDirectory() {
   const [query, setQuery] = useState("");
+  const [floorFilter, setFloorFilter] = useState<"All" | 26 | 27>("All");
 
-  // Sort once (stable) by name A-Z
   const sorted = useMemo(
     () => [...initialExtensions].sort((a, b) => a.name.localeCompare(b.name)),
     []
@@ -201,82 +251,130 @@ export default function OfficeExtensionsDirectory() {
 
   const filtered = useMemo(() => {
     const term = query.toLowerCase().trim();
-    if (!term) return sorted;
     return sorted.filter((item) => {
-      const nameMatch = item.name.toLowerCase().includes(term);
-      const deptMatch = item.dept.toLowerCase().includes(term);
-      const extMatch = item.ext.includes(term);
-      const notesMatch = item.notes.toLowerCase().includes(term);
-      return nameMatch || deptMatch || extMatch || notesMatch;
+      const f = getFloor(item.dept, item.notes);
+      const floorOk = floorFilter === "All" || f === floorFilter;
+      if (!term) return floorOk;
+      const match =
+        item.name.toLowerCase().includes(term) ||
+        item.dept.toLowerCase().includes(term) ||
+        item.ext.toLowerCase().includes(term) ||
+        item.notes.toLowerCase().includes(term);
+      return floorOk && match;
     });
-  }, [query, sorted]);
+  }, [query, sorted, floorFilter]);
 
-  const onChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
+  const onChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setQuery(e.target.value);
 
   return (
-    <main className="min-h-screen antialiased bg-indigo-50">
-      <div className="container mx-auto p-4 md:p-8 max-w-6xl">
+    <main className="min-h-screen flex flex-col justify-between antialiased bg-gradient-to-b from-indigo-50 to-white">
+      <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <header className="text-center mb-8 md:mb-12 pt-4">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            Office Extensions Directory (TCG Internal)
-          </h1>
-          <p className="text-lg text-indigo-700 mt-2 font-medium">
-            List of employee contacts and office extensions for easy viewing.
-          </p>
-        </header>
+        <div className="sticky top-0 z-30 backdrop-blur bg-white/90 border-b border-indigo-100 px-4 md:px-8 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">
+              Office Extensions Directory{" "}
+              <span className="text-indigo-600">(TCG)</span>
+            </h1>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
+              <span className="inline-flex px-2 py-1 rounded border border-emerald-200 bg-emerald-50">
+                26th Floor
+              </span>
+              <span className="inline-flex px-2 py-1 rounded border border-indigo-200 bg-indigo-50">
+                27th Floor
+              </span>
+            </div>
+          </div>
 
-        {/* Search */}
-        <div className="mb-8 shadow-2xl bg-white rounded-2xl p-6 border-4 border-indigo-100/70">
-          <div className="relative">
-            {/* Search Icon */}
-            <svg
-              className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-indigo-500"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <label htmlFor="search-input" className="sr-only">
-              Search name, department, or extension
-            </label>
-            <input
-              id="search-input"
-              type="text"
-              placeholder="Search name, department, or extension..."
-              value={query}
-              onChange={onChange}
-              className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-xl focus:ring-indigo-600 focus:border-indigo-600 shadow-inner transition duration-150"
-            />
+          {/* Search + Filter */}
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="relative md:col-span-3">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-indigo-500"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search name, department, or extension..."
+                value={query}
+                onChange={onChange}
+                className="w-full pl-10 pr-4 py-3 text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto">
+              {(["All", 26, 27] as const).map((f) => (
+                <button
+                  key={String(f)}
+                  onClick={() => setFloorFilter(f)}
+                  className={classNames(
+                    "px-3 py-2 text-sm rounded-xl border whitespace-nowrap",
+                    floorFilter === f
+                      ? f === 27
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : f === 26
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : "bg-slate-800 text-white border-slate-800"
+                      : f === 27
+                      ? "bg-white text-gray-700 border-indigo-200 hover:border-indigo-300"
+                      : f === 26
+                      ? "bg-white text-gray-700 border-emerald-200 hover:border-emerald-300"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
+                  )}
+                >
+                  {f === "All" ? "All" : `${f}th Floor`}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* List */}
-        {filtered.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="list">
-            {filtered.map((item) => (
-              <div key={item.id} role="listitem">
-                <ExtensionCard item={item} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center p-12 bg-white rounded-xl shadow-md border border-gray-200">
-            <p className="text-xl font-semibold text-gray-500">
-              No extensions matching your search criteria.
-            </p>
-          </div>
-        )}
+        {/* Directory List */}
+        <div className="px-4 md:px-8 py-6">
+          {filtered.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="list">
+              {filtered.map((item) => (
+                <ExtensionCard key={item.id} item={item} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center p-12 bg-white rounded-2xl shadow-sm border border-gray-200">
+              <p className="text-lg font-semibold text-gray-700">
+                No matching results found.
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Try another keyword or clear the floor filter.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="relative text-center text-sm text-gray-600 py-8 border-t border-gray-200 bg-white/80">
+        <div className="absolute inset-x-0 -top-px h-1 bg-gradient-to-r from-emerald-400 via-slate-200 to-indigo-400" />
+        <div className="container mx-auto px-4 flex items-center justify-center gap-3">
+          <p>
+            © {new Date().getFullYear()} IT Department — The Gesit Companies · Maintained by
+            Information Technology Division
+          </p>
+          <img
+            src="/gesit-logo.svg"
+            alt="Gesit Group logo"
+            className="h-6 w-auto opacity-80"
+          />
+        </div>
+      </footer>
     </main>
   );
 }
