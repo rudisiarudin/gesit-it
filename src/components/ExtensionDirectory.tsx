@@ -209,11 +209,6 @@ function ExtensionCard({ item }: { item: Extension }) {
               {item.name}
             </h2>
             <p className="text-sm text-gray-500 truncate" title={item.dept}>{item.dept}</p>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {item.notes && item.notes.trim() !== "" && !/DSM|Common|BOARD OF COMMISSIONAIRE|As listed/i.test(item.notes) && (
-                <Badge label={item.notes} color="bg-slate-100 text-slate-700 border-slate-200" />
-              )}
-            </div>
           </div>
         </div>
         <span
