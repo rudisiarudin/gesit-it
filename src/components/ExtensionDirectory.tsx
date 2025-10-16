@@ -368,7 +368,7 @@ export default function OfficeExtensionsDirectory() {
       <footer className="relative text-center text-sm text-gray-600 py-8 border-t border-gray-200 bg-white/80">
         <div className="absolute inset-x-0 -top-px h-1 bg-gradient-to-r from-emerald-400 via-slate-200 to-indigo-400" />
         <div className="container mx-auto px-4 flex items-center justify-center gap-3">
-          <p>© {new Date().getFullYear()} IT Department — Gesit Group · Maintained by Information Technology Division</p>
+          <p>© {new Date().getFullYear()} IT Department — The Gesit Companies · Maintained by Rudi Siarudin</p>
         </div>
       </footer>
     </main>
