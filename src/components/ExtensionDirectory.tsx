@@ -131,10 +131,10 @@ const initialExtensions: Extension[] = [
   { id: 113, name: "Jones", dept: "Deputy President & CEO", ext: "502", notes: "As listed" },
 
   // COMMON FACILITIES (27th & 26th)
-  { id: 115, name: "Pantry",     dept: "Common Facilities", ext: "241", notes: "Common Area (27th Floor)" },
-  { id: 116, name: "Operator 1", dept: "Common Facilities", ext: "200", notes: "Common Area (27th Floor)" },
-  { id: 117, name: "Operator 2", dept: "Common Facilities", ext: "300", notes: "Common Area (27th Floor)" },
-  { id: 120, name: "Pantry",     dept: "Common Facilities", ext: "190", notes: "Pantry (26th Floor)" },
+  { id: 115, name: "Pantry",     dept: "Gesit Natural Resources", ext: "241", notes: "Common Area (26th Floor)" },
+  { id: 116, name: "Operator 1", dept: "Gesit Natural Resources", ext: "200", notes: "Common Area (26th Floor)" },
+  { id: 117, name: "Operator 2", dept: "Gesit Natural Resources", ext: "300", notes: "Common Area (26th Floor)" },
+  { id: 120, name: "Pantry",     dept: "Common Facilities", ext: "190", notes: "Pantry (27th Floor)" },
 
   // MEETING / COMMON ROOMS (present on directory)
   { id: 121, name: "Board Room 1",    dept: "Common Rooms", ext: "800", notes: "" },
