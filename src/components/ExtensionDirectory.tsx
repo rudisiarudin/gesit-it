@@ -1,6 +1,9 @@
 "use client";
 import React, { useMemo, useState, ChangeEvent } from "react";
 
+/* ===========================
+   Types
+=========================== */
 interface Extension {
   id: number;
   name: string;
@@ -9,7 +12,10 @@ interface Extension {
   notes: string;
 }
 
-// Phone Extension Data (SYNCED WITH OCT 2025 DIRECTORY IMAGE)
+/* ===========================
+   Phone Extension Data
+   (SYNCED WITH OCT 2025 DIRECTORY IMAGE)
+=========================== */
 const initialExtensions: Extension[] = [
   // BOARD OF COMMISSIONERS
   { id: 1, name: "JSA", dept: "Board of Commissioners", ext: "100", notes: "BOARD OF COMMISSIONAIRE" },
@@ -54,7 +60,7 @@ const initialExtensions: Extension[] = [
   { id: 31, name: "Sylvia",  dept: "Corporate Secretary & Legal", ext: "142", notes: "CORPORATE SECRETARY & LEGAL" },
   { id: 32, name: "Desi",    dept: "Corporate Secretary & Legal", ext: "143", notes: "CORPORATE SECRETARY & LEGAL" },
   { id: 33, name: "Nancy",   dept: "Corporate Secretary & Legal", ext: "152", notes: "CORPORATE SECRETARY & LEGAL" },
-  { id: 118,name: "Nike",    dept: "Corporate Secretary & Legal", ext: "504", notes: "From directory" }, // keep ext 504 here
+  { id: 118,name: "Nike",    dept: "Corporate Secretary & Legal", ext: "504", notes: "From directory" }, // keep 504 here
 
   // GENERAL AFFAIRS (+ receptionist)
   { id: 34, name: "Susilo", dept: "General Affairs", ext: "162", notes: "GENERAL AFFAIR" },
@@ -85,7 +91,7 @@ const initialExtensions: Extension[] = [
   { id: 49, name: "Petrus",           dept: "Property", ext: "206", notes: "PROPERTY" },
   { id: 50, name: "Neysa",            dept: "Property", ext: "207", notes: "PROPERTY" },
   { id: 51, name: "Katherine",        dept: "Property", ext: "208", notes: "PROPERTY" },
-  { id: 52, name: "Corina",          dept: "Property", ext: "302", notes: "PROPERTY" }, // was Corina
+  { id: 52, name: "Corina",           dept: "Property", ext: "302", notes: "PROPERTY" }, // was Corina
 
   // TRADING
   { id: 53, name: "Suryadi Hertanto", dept: "Trading", ext: "301", notes: "TRADING (PROPERTY CONFLICT)" },
@@ -138,50 +144,59 @@ const initialExtensions: Extension[] = [
   { id: 125, name: "Cigar Room",      dept: "Common Rooms", ext: "805", notes: "" },
 ];
 
-function getFloor(dept: string, notes: string) {
-  if (/26/i.test(notes) || /DSM/i.test(dept)) return 26;
-  if (/27/i.test(notes) || /Common/i.test(dept)) return 27;
-  return null;
+/* ===========================
+   UI helpers
+=========================== */
+const PHONE_ICON = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
+    <path d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6l1.5-2.5 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
+  </svg>
+);
+
+function classNames(...c: Array<string | false | undefined>) {
+  return c.filter(Boolean).join(" ");
 }
 
-function classNames(...classes: (string | false | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
+/* ===========================
+   Floor detection (by department only)
+=========================== */
+function getFloor(dept: string): 26 | 27 {
+  if (/Dinamika Sejahtera Mandiri/i.test(dept)) return 26;
+  return 27; // default for all other departments
 }
 
+/* ===========================
+   Small components
+=========================== */
 function Badge({ label, color }: { label: string; color: string }) {
   return (
-    <span className={`px-2 py-0.5 text-xs font-semibold rounded-lg border ${color}`}>
-      {label}
-    </span>
+    <span className={`px-2 py-0.5 text-xs font-semibold rounded-lg border ${color}`}>{label}</span>
   );
 }
 
 function ExtensionCard({ item }: { item: Extension }) {
   const initial = item.name.charAt(0).toUpperCase();
-  const floor = getFloor(item.dept, item.notes);
+  const floor = getFloor(item.dept);
 
   const frameColor =
-    floor === 27
-      ? "border-indigo-200 ring-1 ring-indigo-50"
-      : floor === 26
-      ? "border-emerald-200 ring-1 ring-emerald-50"
-      : "border-indigo-100";
-
-  const barColor =
-    floor === 27
-      ? "bg-indigo-400"
-      : floor === 26
-      ? "bg-emerald-400"
-      : "bg-indigo-300";
+    floor === 27 ? "border-indigo-200 ring-1 ring-indigo-50" : "border-emerald-200 ring-1 ring-emerald-50";
+  const barColor = floor === 27 ? "bg-indigo-400" : "bg-emerald-400";
 
   return (
-    <div
-      className={classNames(
-        "relative bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border",
-        frameColor
-      )}
-    >
+    <div className={classNames("relative bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border", frameColor)}>
+      {/* top accent bar */}
       <div className={classNames("absolute left-0 right-0 top-0 h-1 rounded-t-2xl", barColor)} />
+
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center min-w-0 gap-4">
           <div className="w-12 h-12 rounded-full bg-indigo-600 text-white font-bold text-xl grid place-items-center shadow-sm border-2 border-indigo-300">
@@ -191,59 +206,45 @@ function ExtensionCard({ item }: { item: Extension }) {
             <h2 className="text-lg md:text-xl font-semibold text-gray-900 truncate" title={item.name}>
               {item.name}
             </h2>
-            <p className="text-sm text-gray-500 truncate" title={item.dept}>
-              {item.dept}
-            </p>
+            <p className="text-sm text-gray-500 truncate" title={item.dept}>{item.dept}</p>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {item.notes && !/DSM|Common/i.test(item.notes) && (
-                <Badge
-                  label={item.notes}
-                  color="bg-slate-100 text-slate-700 border-slate-200"
-                />
+                <Badge label={item.notes} color="bg-slate-100 text-slate-700 border-slate-200" />
               )}
             </div>
           </div>
         </div>
+
         <span
           title="Extension Number"
           className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xl font-extrabold bg-amber-50 text-amber-700 border-amber-200"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6l1.5-2.5 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
-          </svg>
+          {PHONE_ICON}
           <span>{item.ext}</span>
         </span>
       </div>
 
-      {floor && (
-        <div
-          className={classNames(
-            "mt-3 text-xs font-medium text-center rounded-lg py-1",
-            floor === 27
-              ? "bg-indigo-50 text-indigo-700"
-              : "bg-emerald-50 text-emerald-700"
-          )}
-        >
-          Located on {floor}th Floor
-        </div>
-      )}
+      {/* Always show floor label */}
+      <div
+        className={classNames(
+          "mt-3 text-xs font-medium text-center rounded-lg py-1",
+          floor === 27 ? "bg-indigo-50 text-indigo-700" : "bg-emerald-50 text-emerald-700"
+        )}
+      >
+        Located on {floor}th Floor
+      </div>
     </div>
   );
 }
 
+/* ===========================
+   Main component
+=========================== */
 export default function OfficeExtensionsDirectory() {
   const [query, setQuery] = useState("");
   const [floorFilter, setFloorFilter] = useState<"All" | 26 | 27>("All");
 
+  // Sort once (stable) by name A–Z
   const sorted = useMemo(
     () => [...initialExtensions].sort((a, b) => a.name.localeCompare(b.name)),
     []
@@ -252,7 +253,7 @@ export default function OfficeExtensionsDirectory() {
   const filtered = useMemo(() => {
     const term = query.toLowerCase().trim();
     return sorted.filter((item) => {
-      const f = getFloor(item.dept, item.notes);
+      const f = getFloor(item.dept);
       const floorOk = floorFilter === "All" || f === floorFilter;
       if (!term) return floorOk;
       const match =
@@ -264,30 +265,23 @@ export default function OfficeExtensionsDirectory() {
     });
   }, [query, sorted, floorFilter]);
 
-  const onChange = (e: ChangeEvent<HTMLInputElement>) =>
-    setQuery(e.target.value);
+  const onChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
 
   return (
     <main className="min-h-screen flex flex-col justify-between antialiased bg-gradient-to-b from-indigo-50 to-white">
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
+      <div className="container mx-auto p-0 md:p-0 max-w-7xl">
+        {/* Sticky header with search & floor filter */}
         <div className="sticky top-0 z-30 backdrop-blur bg-white/90 border-b border-indigo-100 px-4 md:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">
-              Office Extensions Directory{" "}
-              <span className="text-indigo-600">(TCG)</span>
+              Office Extensions Directory <span className="text-indigo-600">(TCG)</span>
             </h1>
             <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
-              <span className="inline-flex px-2 py-1 rounded border border-emerald-200 bg-emerald-50">
-                26th Floor
-              </span>
-              <span className="inline-flex px-2 py-1 rounded border border-indigo-200 bg-indigo-50">
-                27th Floor
-              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded border border-emerald-200 bg-emerald-50">26th Floor</span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded border border-indigo-200 bg-indigo-50">27th Floor</span>
             </div>
           </div>
 
-          {/* Search + Filter */}
           <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="relative md:col-span-3">
               <svg
@@ -299,11 +293,13 @@ export default function OfficeExtensionsDirectory() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden
               >
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
               <input
+                id="search-input"
                 type="text"
                 placeholder="Search name, department, or extension..."
                 value={query}
@@ -331,6 +327,7 @@ export default function OfficeExtensionsDirectory() {
                       ? "bg-white text-gray-700 border-emerald-200 hover:border-emerald-300"
                       : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
                   )}
+                  aria-pressed={floorFilter === f}
                 >
                   {f === "All" ? "All" : `${f}th Floor`}
                 </button>
@@ -339,22 +336,20 @@ export default function OfficeExtensionsDirectory() {
           </div>
         </div>
 
-        {/* Directory List */}
+        {/* Content */}
         <div className="px-4 md:px-8 py-6">
           {filtered.length > 0 ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="list">
               {filtered.map((item) => (
-                <ExtensionCard key={item.id} item={item} />
+                <div key={item.id} role="listitem">
+                  <ExtensionCard item={item} />
+                </div>
               ))}
             </div>
           ) : (
             <div className="text-center p-12 bg-white rounded-2xl shadow-sm border border-gray-200">
-              <p className="text-lg font-semibold text-gray-700">
-                No matching results found.
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                Try another keyword or clear the floor filter.
-              </p>
+              <p className="text-lg font-semibold text-gray-700">No matching results found.</p>
+              <p className="text-sm text-gray-500 mt-1">Try another keyword or clear the floor filter.</p>
             </div>
           )}
         </div>
@@ -364,15 +359,8 @@ export default function OfficeExtensionsDirectory() {
       <footer className="relative text-center text-sm text-gray-600 py-8 border-t border-gray-200 bg-white/80">
         <div className="absolute inset-x-0 -top-px h-1 bg-gradient-to-r from-emerald-400 via-slate-200 to-indigo-400" />
         <div className="container mx-auto px-4 flex items-center justify-center gap-3">
-          <p>
-            © {new Date().getFullYear()} IT Department — The Gesit Companies · Maintained by
-            Information Technology Division
-          </p>
-          <img
-            src="/gesit-logo.svg"
-            alt="Gesit Group logo"
-            className="h-6 w-auto opacity-80"
-          />
+          <p>© {new Date().getFullYear()} IT Department — The Gesit Companies· Maintained by Information Technology Division</p>
+         
         </div>
       </footer>
     </main>
