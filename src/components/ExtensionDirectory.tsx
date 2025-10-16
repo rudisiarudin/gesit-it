@@ -64,7 +64,7 @@ const initialExtensions: Extension[] = [
 
   // GENERAL AFFAIRS (+ receptionist)
   { id: 34, name: "Susilo", dept: "General Affairs", ext: "162", notes: "GENERAL AFFAIR" },
-  { id: 35, name: "Ety",   dept: "General Affairs", ext: "188", notes: "GENERAL AFFAIR" },
+  { id: 35, name: "Etty",   dept: "General Affairs", ext: "188", notes: "GENERAL AFFAIR" },
   { id: 87, name: "Suryadi",dept: "General Affairs", ext: "189", notes: "GENERAL AFFAIR" },
   { id: 36, name: "Noni",   dept: "General Affairs", ext: "191", notes: "GENERAL AFFAIR" },
   { id: 119,name: "Widya",  dept: "General Affairs", ext: "180/0", notes: "Receptionist" },
@@ -102,7 +102,7 @@ const initialExtensions: Extension[] = [
   // FINANCIAL INVESTMENT
   { id: 57, name: "Ita Permatasari", dept: "Financial Investment", ext: "305", notes: "FINANCIAL INVESTMENT" },
 
-  // DINAMIKA SEJAHTERA MANDIRI – 26th FLOOR (shared lines noted)
+  // Gesit Natural Resources – 26th FLOOR (shared lines noted)
   { id: 90,  name: "Budhi Rahmadhi", dept: "Gesit Natural Resources", ext: "210", notes: "DSM 26" },
   { id: 91,  name: "Fendra",         dept: "Gesit Natural Resources", ext: "211", notes: "DSM 26" },
   { id: 92,  name: "Husni",          dept: "Gesit Natural Resources", ext: "212", notes: "DSM 26" },
@@ -171,7 +171,11 @@ function classNames(...c: Array<string | false | undefined>) {
    Floor detection (department-only)
 =========================== */
 function getFloor(dept: string): 26 | 27 {
-  if (/Dinamika Sejahtera Mandiri/i.test(dept)) return 26;
+  // Floor mapping by DEPARTMENT only (per requirement: do NOT use notes)
+  const floor26Depts = [
+    /Gesit Natural Resources/i,
+  ];
+  if (floor26Depts.some((rx) => rx.test(dept))) return 26;
   return 27;
 }
 
@@ -205,6 +209,11 @@ function ExtensionCard({ item }: { item: Extension }) {
               {item.name}
             </h2>
             <p className="text-sm text-gray-500 truncate" title={item.dept}>{item.dept}</p>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {item.notes && item.notes.trim() !== "" && !/DSM|Common|BOARD OF COMMISSIONAIRE|As listed/i.test(item.notes) && (
+                <Badge label={item.notes} color="bg-slate-100 text-slate-700 border-slate-200" />
+              )}
+            </div>
           </div>
         </div>
         <span
