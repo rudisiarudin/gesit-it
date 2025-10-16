@@ -10,9 +10,9 @@ interface Extension {
   notes: string;
 }
 
-// Phone Extension Data (UPDATED TO LATEST DIRECTORY DATA)
+// Phone Extension Data (SYNCED WITH OCT 2025 DIRECTORY IMAGE)
 const initialExtensions: Extension[] = [
-  // BOARD OF COMMISSIONERS (Identical)
+  // BOARD OF COMMISSIONERS
   { id: 1, name: "JSA", dept: "Board of Commissioners", ext: "100", notes: "BOARD OF COMMISSIONAIRE" },
   { id: 2, name: "JSB", dept: "Board of Commissioners", ext: "101", notes: "BOARD OF COMMISSIONAIRE" },
   { id: 3, name: "JSC", dept: "Board of Commissioners", ext: "102", notes: "BOARD OF COMMISSIONAIRE" },
@@ -21,116 +21,124 @@ const initialExtensions: Extension[] = [
   { id: 6, name: "MSC", dept: "Board of Commissioners", ext: "105", notes: "BOARD OF COMMISSIONAIRE" },
   { id: 7, name: "MSD", dept: "Board of Commissioners", ext: "106", notes: "BOARD OF COMMISSIONAIRE" },
 
-  // PA & SECRETARY (Identical)
-  { id: 8, name: "Asma", dept: "PR & Secretary", ext: "111", notes: "MSB" },
-  { id: 9, name: "Intan", dept: "PR & Secretary", ext: "112", notes: "Chairman" },
-  { id: 10, name: "Dinny", dept: "PR & Secretary", ext: "113", notes: "CEO" },
-  { id: 11, name: "Artika", dept: "PR & Secretary", ext: "114", notes: "Jave" },
-  { id: 12, name: "Sarah", dept: "PR & Secretary", ext: "115", notes: "Javier" },
-  { id: 86, name: "Dwi", dept: "PR & Secretary", ext: "511", notes: "Jones" },
+  // PA & SECRETARY
+  { id: 8,  name: "Asma",  dept: "PA & Secretary", ext: "111", notes: "MSB" },
+  { id: 9,  name: "Intan", dept: "PA & Secretary", ext: "112", notes: "Chairman" },
+  { id: 10, name: "Dinny", dept: "PA & Secretary", ext: "113", notes: "CEO" },
+  { id: 11, name: "Artika",dept: "PA & Secretary", ext: "114", notes: "Jave" },
+  { id: 12, name: "Sarah", dept: "PA & Secretary", ext: "115", notes: "Javier" },
+  { id: 86, name: "Dwi",   dept: "PA & Secretary", ext: "511", notes: "Jones" },
 
-  // FINANCE & ACCOUNTING (Identical)
-  { id: 13, name: "Yayan", dept: "Finance & Accounting", ext: "120", notes: "FINANCE & ACCOUNTING" },
-  { id: 14, name: "Merly", dept: "Finance & Accounting", ext: "122", notes: "FINANCE & ACCOUNTING" },
-  { id: 15, name: "Maradonna", dept: "Finance & Accounting", ext: "154", notes: "FINANCE & ACCOUNTING" },
-  { id: 16, name: "Vanesha", dept: "Finance & Accounting", ext: "161", notes: "FINANCE & ACCOUNTING" },
-  { id: 17, name: "Lisl", dept: "Finance & Accounting", ext: "163", notes: "FINANCE & ACCOUNTING" },
-  { id: 18, name: "Stephanie", dept: "Finance & Accounting", ext: "167", notes: "FINANCE & ACCOUNTING" },
-  { id: 19, name: "Evi", dept: "Finance & Accounting", ext: "168", notes: "FINANCE & ACCOUNTING" },
-  { id: 20, name: "Milan", dept: "Finance & Accounting", ext: "169", notes: "FINANCE & ACCOUNTING" },
-  { id: 21, name: "Winata", dept: "Finance & Accounting", ext: "170", notes: "FINANCE & ACCOUNTING" },
-  { id: 22, name: "Novitasari", dept: "Finance & Accounting", ext: "171", notes: "FINANCE & ACCOUNTING" },
-  { id: 23, name: "Rama", dept: "Finance & Accounting", ext: "172", notes: "FINANCE & ACCOUNTING" },
-  { id: 24, name: "Winarti", dept: "Finance & Accounting", ext: "173", notes: "FINANCE & ACCOUNTING" },
+  // FINANCE & ACCOUNTING (fixed names)
+  { id: 13, name: "Yayan",       dept: "Finance & Accounting", ext: "120", notes: "FINANCE & ACCOUNTING" },
+  { id: 14, name: "Merly",       dept: "Finance & Accounting", ext: "122", notes: "FINANCE & ACCOUNTING" },
+  { id: 15, name: "Maradonna",   dept: "Finance & Accounting", ext: "154", notes: "FINANCE & ACCOUNTING" },
+  { id: 16, name: "Vanesha",     dept: "Finance & Accounting", ext: "161", notes: "FINANCE & ACCOUNTING" },
+  { id: 17, name: "Lisi",        dept: "Finance & Accounting", ext: "163", notes: "FINANCE & ACCOUNTING" }, // was Lisl
+  { id: 18, name: "Stephanie",   dept: "Finance & Accounting", ext: "167", notes: "FINANCE & ACCOUNTING" },
+  { id: 19, name: "Evi",         dept: "Finance & Accounting", ext: "168", notes: "FINANCE & ACCOUNTING" },
+  { id: 20, name: "Mian",        dept: "Finance & Accounting", ext: "169", notes: "FINANCE & ACCOUNTING" }, // was Milan
+  { id: 21, name: "Winata",      dept: "Finance & Accounting", ext: "170", notes: "FINANCE & ACCOUNTING" },
+  { id: 22, name: "Novitasari",  dept: "Finance & Accounting", ext: "171", notes: "FINANCE & ACCOUNTING" },
+  { id: 23, name: "Rama",        dept: "Finance & Accounting", ext: "172", notes: "FINANCE & ACCOUNTING" },
+  { id: 24, name: "Winarti",     dept: "Finance & Accounting", ext: "173", notes: "FINANCE & ACCOUNTING" },
 
-  // CORPORATE AFFAIRS (Identical)
+  // CORPORATE AFFAIRS
   { id: 25, name: "Peng Tjoan", dept: "Corporate Affairs", ext: "130", notes: "CORPORATE AFFAIR" },
-  { id: 26, name: "Thomas", dept: "Corporate Affairs", ext: "131", notes: "CORPORATE AFFAIR" },
-  { id: 27, name: "Yohan", dept: "Corporate Affairs", ext: "141", notes: "CORPORATE AFFAIR" },
-  { id: 28, name: "Yudha", dept: "Corporate Affairs", ext: "181", notes: "CORPORATE AFFAIR" },
-  { id: 29, name: "Ruby", dept: "Corporate Affairs", ext: "182", notes: "CORPORATE AFFAIR" },
+  { id: 26, name: "Thomas",     dept: "Corporate Affairs", ext: "131", notes: "CORPORATE AFFAIR" },
+  { id: 27, name: "Yohan",      dept: "Corporate Affairs", ext: "141", notes: "CORPORATE AFFAIR" },
+  { id: 28, name: "Yudha",      dept: "Corporate Affairs", ext: "181", notes: "CORPORATE AFFAIR" },
+  { id: 29, name: "Ruby",       dept: "Corporate Affairs", ext: "182", notes: "CORPORATE AFFAIR" },
 
-  // CORPORATE SECRETARY & LEGAL (Felly 142 replaced by Sylvia 142)
+  // CORPORATE SECRETARY & LEGAL
   { id: 30, name: "Natalia", dept: "Corporate Secretary & Legal", ext: "140", notes: "CORPORATE SECRETARY & LEGAL" },
-  { id: 31, name: "Sylvia", dept: "Corporate Secretary & Legal", ext: "142", notes: "CORPORATE SECRETARY & LEGAL" }, // Updated Name
-  { id: 32, name: "Desi", dept: "Corporate Secretary & Legal", ext: "143", notes: "CORPORATE SECRETARY & LEGAL" },
-  { id: 33, name: "Nancy", dept: "Corporate Secretary & Legal", ext: "152", notes: "CORPORATE SECRETARY & LEGAL" },
+  { id: 31, name: "Sylvia",  dept: "Corporate Secretary & Legal", ext: "142", notes: "CORPORATE SECRETARY & LEGAL" },
+  { id: 32, name: "Desi",    dept: "Corporate Secretary & Legal", ext: "143", notes: "CORPORATE SECRETARY & LEGAL" },
+  { id: 33, name: "Nancy",   dept: "Corporate Secretary & Legal", ext: "152", notes: "CORPORATE SECRETARY & LEGAL" },
+  { id: 118,name: "Nike",    dept: "Corporate Secretary & Legal", ext: "504", notes: "From directory" }, // keep ext 504 here
 
-  // GENERAL AFFAIRS (Ext. 188/189 Conflict Resolved and Updated)
+  // GENERAL AFFAIRS (+ receptionist)
   { id: 34, name: "Susilo", dept: "General Affairs", ext: "162", notes: "GENERAL AFFAIR" },
-  { id: 35, name: "Etty", dept: "General Affairs", ext: "188", notes: "GENERAL AFFAIR" },
-  { id: 87, name: "Suryadi", dept: "General Affairs", ext: "189", notes: "GENERAL AFFAIR" }, // Updated Ext
-  { id: 36, name: "Noni", dept: "General Affairs", ext: "191", notes: "GENERAL AFFAIR" },
+  { id: 35, name: "Etty",   dept: "General Affairs", ext: "188", notes: "GENERAL AFFAIR" },
+  { id: 87, name: "Suryadi",dept: "General Affairs", ext: "189", notes: "GENERAL AFFAIR" },
+  { id: 36, name: "Noni",   dept: "General Affairs", ext: "191", notes: "GENERAL AFFAIR" },
+  { id: 119,name: "Widya",  dept: "General Affairs", ext: "180/0", notes: "Receptionist" },
 
-  // HR & LOGISTICS (Rara's ext. updated to 198)
+  // HR & LOGISTICS
   { id: 37, name: "Javier", dept: "HR & Logistics", ext: "195", notes: "HR & LOGISTICS" },
-  { id: 38, name: "Resti", dept: "HR & Logistics", ext: "185", notes: "HR & LOGISTICS" },
-  { id: 39, name: "Nisa", dept: "HR & Logistics", ext: "187", notes: "HR & LOGISTICS" },
-  { id: 40, name: "Rara", dept: "HR & Logistics", ext: "198", notes: "HR & LOGISTICS" }, // Updated Ext.
+  { id: 38, name: "Resti",  dept: "HR & Logistics", ext: "185", notes: "HR & LOGISTICS" },
+  { id: 39, name: "Nisa",   dept: "HR & Logistics", ext: "187", notes: "HR & LOGISTICS" },
+  { id: 40, name: "Rara",   dept: "HR & Logistics", ext: "198", notes: "HR & LOGISTICS" },
 
-  // INFORMATION TECHNOLOGY (Identical)
-  { id: 41, name: "Rudi", dept: "Information Technology", ext: "196", notes: "INFORMATION TECHNOLOGY" },
-  { id: 42, name: "Bendry", dept: "Information Technology", ext: "197", notes: "INFORMATION TECHNOLOGY" },
+  // INFORMATION TECHNOLOGY
+  { id: 41, name: "Rudi",  dept: "Information Technology", ext: "196", notes: "INFORMATION TECHNOLOGY" },
+  { id: 42, name: "Bendry",dept: "Information Technology", ext: "197", notes: "INFORMATION TECHNOLOGY" },
 
-  // GESIT FOUNDATION (Identical)
-  { id: 43, name: "Yuni", dept: "Gesit Foundation", ext: "186", notes: "GESIT FOUNDATION" },
+  // GESIT FOUNDATION
   { id: 44, name: "Kevin", dept: "Gesit Foundation", ext: "192", notes: "GESIT FOUNDATION" },
+  { id: 43, name: "Yuni",  dept: "Gesit Foundation", ext: "186", notes: "GESIT FOUNDATION" },
 
-  // PROPERTY (Identical)
-  { id: 45, name: "Jave", dept: "Property", ext: "301", notes: "PROPERTY (TRADING CONFLICT)" },
-  { id: 46, name: "Donny Triatmoko", dept: "Property", ext: "202", notes: "PROPERTY" },
-  { id: 47, name: "Stefanini", dept: "Property", ext: "203", notes: "PROPERTY" },
-  { id: 48, name: "Eliaanti", dept: "Property", ext: "204", notes: "PROPERTY" },
-  { id: 49, name: "Petrus", dept: "Property", ext: "206", notes: "PROPERTY" },
-  { id: 50, name: "Neysa", dept: "Property", ext: "207", notes: "PROPERTY" },
-  { id: 51, name: "Katherine", dept: "Property", ext: "208", notes: "PROPERTY" },
-  { id: 52, name: "Corrina", dept: "Property", ext: "302", notes: "PROPERTY" },
+  // PROPERTY (Corrina fix)
+  { id: 45, name: "Jave",             dept: "Property", ext: "301", notes: "PROPERTY (TRADING CONFLICT)" },
+  { id: 46, name: "Donny Triatmoko",  dept: "Property", ext: "202", notes: "PROPERTY" },
+  { id: 47, name: "Stefanini",        dept: "Property", ext: "203", notes: "PROPERTY" },
+  { id: 48, name: "Eliaanti",         dept: "Property", ext: "204", notes: "PROPERTY" },
+  { id: 49, name: "Petrus",           dept: "Property", ext: "206", notes: "PROPERTY" },
+  { id: 50, name: "Neysa",            dept: "Property", ext: "207", notes: "PROPERTY" },
+  { id: 51, name: "Katherine",        dept: "Property", ext: "208", notes: "PROPERTY" },
+  { id: 52, name: "Corina",          dept: "Property", ext: "302", notes: "PROPERTY" }, // was Corina
 
-  // TRADING (Identical)
+  // TRADING
   { id: 53, name: "Suryadi Hertanto", dept: "Trading", ext: "301", notes: "TRADING (PROPERTY CONFLICT)" },
-  { id: 54, name: "Hilal", dept: "Trading", ext: "303", notes: "TRADING" },
-  { id: 55, name: "Harvey", dept: "Trading", ext: "304", notes: "TRADING" },
-  { id: 56, name: "Ayu", dept: "Trading", ext: "306", notes: "TRADING" },
+  { id: 54, name: "Hilal",            dept: "Trading", ext: "303", notes: "TRADING" },
+  { id: 55, name: "Harvey",           dept: "Trading", ext: "304", notes: "TRADING" },
+  { id: 56, name: "Ayu",              dept: "Trading", ext: "306", notes: "TRADING" },
 
-  // FINANCIAL INVESTMENT (Identical)
+  // FINANCIAL INVESTMENT
   { id: 57, name: "Ita Permatasari", dept: "Financial Investment", ext: "305", notes: "FINANCIAL INVESTMENT" },
 
-  // DINAMIKA SEJAHTERA MANDIRI (COMPLETELY OVERHAULED based on new image)
-  // DSM 26 - Extensions 210-238
-  { id: 90, name: "Budhi Rahmadhi", dept: "Dinamika Sejahtera Mandiri", ext: "210", notes: "DSM 26" },
-  { id: 91, name: "Fendra", dept: "Dinamika Sejahtera Mandiri", ext: "211", notes: "DSM 26" },
-  { id: 92, name: "Husni", dept: "Dinamika Sejahtera Mandiri", ext: "212", notes: "DSM 26" },
-  { id: 93, name: "Dwi", dept: "Dinamika Sejahtera Mandiri", ext: "213", notes: "DSM 26" },
-  { id: 94, name: "Tunggul", dept: "Dinamika Sejahtera Mandiri", ext: "215", notes: "DSM 26 (Shared Line)" },
-  { id: 95, name: "Titis", dept: "Dinamika Sejahtera Mandiri", ext: "215", notes: "DSM 26 (Shared Line)" },
-  { id: 96, name: "Ryandhi", dept: "Dinamika Sejahtera Mandiri", ext: "215", notes: "DSM 26 (Shared Line)" },
-  { id: 97, name: "Aldri", dept: "Dinamika Sejahtera Mandiri", ext: "220", notes: "DSM 26 (Shared Line)" },
-  { id: 98, name: "Rayvi", dept: "Dinamika Sejahtera Mandiri", ext: "220", notes: "DSM 26 (Shared Line)" },
-  { id: 99, name: "Yusup", dept: "Dinamika Sejahtera Mandiri", ext: "223", notes: "DSM 26 (Shared Line)" },
-  { id: 100, name: "Hadly", dept: "Dinamika Sejahtera Mandiri", ext: "223", notes: "DSM 26 (Shared Line)" },
-  { id: 101, name: "Andrias", dept: "Dinamika Sejahtera Mandiri", ext: "225", notes: "DSM 26" },
-  { id: 102, name: "Pipin", dept: "Dinamika Sejahtera Mandiri", ext: "226", notes: "DSM 26 (Shared Line)" },
-  { id: 103, name: "Said", dept: "Dinamika Sejahtera Mandiri", ext: "226", notes: "DSM 26 (Shared Line)" },
-  { id: 104, name: "Afif", dept: "Dinamika Sejahtera Mandiri", ext: "228", notes: "DSM 26 (Shared Line)" },
-  { id: 105, name: "Hansidi", dept: "Dinamika Sejahtera Mandiri", ext: "228", notes: "DSM 26 (Shared Line)" },
-  { id: 106, name: "Aditya", dept: "Dinamika Sejahtera Mandiri", ext: "230", notes: "DSM 26 (Shared Line)" },
-  { id: 107, name: "Annisa Ayu", dept: "Dinamika Sejahtera Mandiri", ext: "230", notes: "DSM 26 (Shared Line)" },
-  { id: 108, name: "Irsan", dept: "Dinamika Sejahtera Mandiri", ext: "232", notes: "DSM 26 (Shared Line)" },
-  { id: 109, name: "Juni", dept: "Dinamika Sejahtera Mandiri", ext: "232", notes: "DSM 26 (Shared Line)" },
-  { id: 110, name: "Rahmat", dept: "Dinamika Sejahtera Mandiri", ext: "236", notes: "DSM 26 (Shared Line)" },
-  { id: 111, name: "Firly", dept: "Dinamika Sejahtera Mandiri", ext: "236", notes: "DSM 26 (Shared Line)" },
-  { id: 112, name: "Diana", dept: "Dinamika Sejahtera Mandiri", ext: "238", notes: "DSM 26" },
+  // DINAMIKA SEJAHTERA MANDIRI – 26th FLOOR (shared lines noted)
+  { id: 90,  name: "Budhi Rahmadhi", dept: "Dinamika Sejahtera Mandiri", ext: "210", notes: "DSM 26" },
+  { id: 91,  name: "Fendra",         dept: "Dinamika Sejahtera Mandiri", ext: "211", notes: "DSM 26" },
+  { id: 92,  name: "Husni",          dept: "Dinamika Sejahtera Mandiri", ext: "212", notes: "DSM 26" },
+  { id: 93,  name: "Dwi",            dept: "Dinamika Sejahtera Mandiri", ext: "213", notes: "DSM 26" },
+  { id: 94,  name: "Tunggul",        dept: "Dinamika Sejahtera Mandiri", ext: "215", notes: "DSM 26 (Shared Line)" },
+  { id: 95,  name: "Titis",          dept: "Dinamika Sejahtera Mandiri", ext: "215", notes: "DSM 26 (Shared Line)" },
+  { id: 96,  name: "Ryandhi",        dept: "Dinamika Sejahtera Mandiri", ext: "215", notes: "DSM 26 (Shared Line)" },
+  { id: 97,  name: "Aldri",          dept: "Dinamika Sejahtera Mandiri", ext: "220", notes: "DSM 26 (Shared Line)" },
+  { id: 98,  name: "Rayvi",          dept: "Dinamika Sejahtera Mandiri", ext: "220", notes: "DSM 26 (Shared Line)" },
+  { id: 99,  name: "Yusup",          dept: "Dinamika Sejahtera Mandiri", ext: "223", notes: "DSM 26 (Shared Line)" },
+  { id: 100, name: "Hadly",          dept: "Dinamika Sejahtera Mandiri", ext: "223", notes: "DSM 26 (Shared Line)" },
+  { id: 101, name: "Andrias",        dept: "Dinamika Sejahtera Mandiri", ext: "225", notes: "DSM 26" },
+  { id: 102, name: "Pipin",          dept: "Dinamika Sejahtera Mandiri", ext: "226", notes: "DSM 26 (Shared Line)" },
+  { id: 103, name: "Said",           dept: "Dinamika Sejahtera Mandiri", ext: "226", notes: "DSM 26 (Shared Line)" },
+  { id: 104, name: "Afif",           dept: "Dinamika Sejahtera Mandiri", ext: "228", notes: "DSM 26 (Shared Line)" },
+  { id: 105, name: "Hansdi",         dept: "Dinamika Sejahtera Mandiri", ext: "228", notes: "DSM 26 (Shared Line)" }, // was Hansidi
+  { id: 106, name: "Aditya",         dept: "Dinamika Sejahtera Mandiri", ext: "230", notes: "DSM 26 (Shared Line)" },
+  { id: 107, name: "Annisa Ayu",     dept: "Dinamika Sejahtera Mandiri", ext: "230", notes: "DSM 26 (Shared Line)" },
+  { id: 108, name: "Irsan",          dept: "Dinamika Sejahtera Mandiri", ext: "232", notes: "DSM 26 (Shared Line)" },
+  { id: 109, name: "Juni",           dept: "Dinamika Sejahtera Mandiri", ext: "232", notes: "DSM 26 (Shared Line)" },
+  { id: 110, name: "Rahmat",         dept: "Dinamika Sejahtera Mandiri", ext: "236", notes: "DSM 26 (Shared Line)" },
+  { id: 111, name: "Firly",          dept: "Dinamika Sejahtera Mandiri", ext: "236", notes: "DSM 26 (Shared Line)" },
+  { id: 112, name: "Diana",          dept: "Dinamika Sejahtera Mandiri", ext: "238", notes: "DSM 26" },
 
-  // DSM 27 - Extensions 502, 504
-  { id: 113, name: "Jones", dept: "Dinamika Sejahtera Mandiri", ext: "502", notes: "DSM 27" },
-  { id: 114, name: "Nike", dept: "Dinamika Sejahtera Mandiri", ext: "504", notes: "DSM 27" },
+  // EXEC / SPECIAL (same extensions shown on directory)
+  { id: 113, name: "Jones", dept: "Deputy President & CEO", ext: "502", notes: "As listed" },
 
-  // Common Extensions / Operational (UPDATED)
-  { id: 115, name: "Pantry", dept: "Common Facilities", ext: "241", notes: "Common Area (27th Floor)" },
-  { id: 116, name: "Operator 1", dept: "Common Facilities", ext: "300", notes: "Common Area (27th Floor)" },
-  { id: 117, name: "Operator 2", dept: "Common Facilities", ext: "200", notes: "Common Area (27th Floor)" },
-  // Removed previous 800-series meeting room extensions
+  // COMMON FACILITIES (27th & 26th)
+  { id: 115, name: "Pantry",     dept: "Common Facilities", ext: "241", notes: "Common Area (27th Floor)" },
+  { id: 116, name: "Operator 1", dept: "Common Facilities", ext: "200", notes: "Common Area (27th Floor)" }, // swapped
+  { id: 117, name: "Operator 2", dept: "Common Facilities", ext: "300", notes: "Common Area (27th Floor)" }, // swapped
+  { id: 120, name: "Pantry",     dept: "Common Facilities", ext: "190", notes: "Pantry (26th Floor)" },
+
+  // MEETING / COMMON ROOMS (present on directory)
+  { id: 121, name: "Board Room 1",    dept: "Common Rooms", ext: "800", notes: "" },
+  { id: 122, name: "Board Room 2",    dept: "Common Rooms", ext: "801", notes: "" },
+  { id: 123, name: "Conference Room", dept: "Common Rooms", ext: "802", notes: "" },
+  { id: 124, name: "Meeting Room 1",  dept: "Common Rooms", ext: "803", notes: "" },
+  { id: 125, name: "Cigar Room",      dept: "Common Rooms", ext: "805", notes: "" },
 ];
+
 
 function ExtensionCard({ item }: { item: Extension }) {
   const initial = item.name.charAt(0).toUpperCase();
