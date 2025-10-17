@@ -84,7 +84,7 @@ const initialExtensions: Extension[] = [
   { id: 43, name: "Yuni",  dept: "Gesit Foundation", ext: "186", notes: "GESIT FOUNDATION" },
 
   // PROPERTY (Corrina fix)
-  { id: 45, name: "Jave",             dept: "Property", ext: "301", notes: "PROPERTY" },
+  { id: 45, name: "Jave",             dept: "Property", ext: "201", notes: "PROPERTY" },
   { id: 46, name: "Donny Triatmoko",  dept: "Property", ext: "202", notes: "PROPERTY" },
   { id: 47, name: "Stefanini",        dept: "Property", ext: "203", notes: "PROPERTY" },
   { id: 48, name: "Eliaanti",         dept: "Property", ext: "204", notes: "PROPERTY" },
@@ -94,7 +94,7 @@ const initialExtensions: Extension[] = [
   { id: 52, name: "Corina",           dept: "Property", ext: "302", notes: "PROPERTY" },
 
   // TRADING
-  { id: 53, name: "Suryadi Hertanto", dept: "Trading", ext: "302", notes: "TRADING" },
+  { id: 53, name: "Suryadi Hertanto", dept: "Trading", ext: "301", notes: "TRADING" },
   { id: 54, name: "Hilal",            dept: "Trading", ext: "303", notes: "TRADING" },
   { id: 55, name: "Harvey",           dept: "Trading", ext: "304", notes: "TRADING" },
   { id: 56, name: "Ayu",              dept: "Trading", ext: "306", notes: "TRADING" },
