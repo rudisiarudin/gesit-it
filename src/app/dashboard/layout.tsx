@@ -118,7 +118,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     },
     {
       href: "/dashboard/gbp-assets",
-      label: "GBP Asset",
+      label: "GNR Asset",
       icon: <Boxes size={18} />, // ✅ beda ikon dari GA Asset
       groups: ["GBP"],
     },
@@ -242,4 +242,5 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
 
