@@ -61,7 +61,7 @@ const categoryOptions: { value: string; label: string; code: string }[] = [
 async function generateAssetCode(category: string) {
   const cat = categoryOptions.find((c) => c.value.toLowerCase() === (category || '').toLowerCase());
   const catCode = cat ? cat.code : 'OT';
-  const prefix = `GBP-${catCode}-`;
+  const prefix = `GNR-${catCode}-`;
 
   const { data, error } = await supabase
     .from('asset_gbp')
@@ -195,7 +195,7 @@ export default function AssetFormModalGBP({
         <Dialog.Panel className="w-full max-w-3xl bg-white rounded-xl shadow-xl p-4 md:p-6 space-y-6 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center border-b pb-3">
             <Dialog.Title className="text-lg md:text-xl font-semibold text-gray-800">
-              {isEditing ? 'Edit Asset (GBP)' : 'Tambah Asset (GBP)'}
+              {isEditing ? 'Edit Asset (GNR)' : 'Tambah Asset (GNR)'}
             </Dialog.Title>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Tutup">
               <X size={20} />
@@ -369,3 +369,4 @@ export default function AssetFormModalGBP({
     </Dialog>
   );
 }
+
