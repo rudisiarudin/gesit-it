@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       href: "/dashboard/it-assets",
       label: "IT Asset",
       icon: <Cpu size={18} />,
-      groups: ["IT"],
+      groups: ["IT", "GBP"],
     },
     {
       href: "/dashboard/ga-assets",
@@ -242,3 +242,4 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
