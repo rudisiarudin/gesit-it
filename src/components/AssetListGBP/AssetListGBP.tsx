@@ -205,7 +205,7 @@ export default function AssetListGBP() {
   return (
     <div className="space-y-4">
       {/* Title */}
-      <h1 className="text-2xl font-bold">Asset Gesit Bumi Persada List</h1>
+      <h1 className="text-2xl font-bold">Asset Gesit Natural Reasources List</h1>
 
       {/* Top toolbar: search kiri, filter category, tombol kanan */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -319,3 +319,4 @@ export default function AssetListGBP() {
     </div>
   );
 }
+
