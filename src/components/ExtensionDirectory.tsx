@@ -1,5 +1,17 @@
 "use client";
-import React, { useMemo, useState, ChangeEvent } from "react";
+import React, { useMemo, useState } from "react";
+import { 
+  Search, 
+  Phone, 
+  Building2, 
+  Info, 
+  PhoneOutgoing, 
+  PhoneIncoming, 
+  Globe, 
+  LayoutGrid,
+  MapPin,
+  Users
+} from "lucide-react";
 
 /* ===========================
    Types
@@ -9,483 +21,444 @@ interface Extension {
   name: string;
   dept: string;
   ext: string;
-  notes: string;
+  floor: 26 | 27;
+  role?: string;
 }
 
 /* ===========================
-   Phone Extension Data
-   (SYNCED WITH OCT 2025 DIRECTORY IMAGE)
+   Data (Synced with Oct 2025 Image)
 =========================== */
-const initialExtensions: Extension[] = [
-  // BOARD OF COMMISSIONERS
-  { id: 1, name: "MSA",          dept: "Board of Commissioners", ext: "103", notes: "BOARD OF COMMISSIONAIRE" },
-  { id: 2, name: "MSA Bed Room", dept: "Board of Commissioners", ext: "107", notes: "BOARD OF COMMISSIONAIRE" },
-  { id: 3, name: "JSB",          dept: "Board of Commissioners", ext: "101", notes: "BOARD OF COMMISSIONAIRE" },
-  { id: 4, name: "JSC",          dept: "Board of Commissioners", ext: "102", notes: "BOARD OF COMMISSIONAIRE" },
-  { id: 5, name: "MSB",          dept: "Board of Commissioners", ext: "104", notes: "BOARD OF COMMISSIONAIRE" },
-  { id: 6, name: "MSC",          dept: "Board of Commissioners", ext: "105", notes: "BOARD OF COMMISSIONAIRE" },
-  { id: 7, name: "MSD",          dept: "Board of Commissioners", ext: "106", notes: "BOARD OF COMMISSIONAIRE" },
+const DATA: Extension[] = [
+  // --- BOARD OF COMMISSIONERS (27th) ---
+  { id: 101, name: "JSB", dept: "Board of Commissioners", ext: "101", floor: 27 },
+  { id: 102, name: "JSC", dept: "Board of Commissioners", ext: "102", floor: 27 },
+  { id: 103, name: "MSA", dept: "Board of Commissioners", ext: "103", floor: 27 },
+  { id: 104, name: "MSB", dept: "Board of Commissioners", ext: "104", floor: 27 },
+  { id: 105, name: "MSC", dept: "Board of Commissioners", ext: "105", floor: 27 },
+  { id: 106, name: "MSD", dept: "Board of Commissioners", ext: "106", floor: 27 },
+  { id: 107, name: "MSA Bed Room", dept: "Board of Commissioners", ext: "107", floor: 27 },
 
-  // PA & SECRETARY (dashed boxes kanan atas)
-  { id: 8,  name: "Ety",   dept: "PA & Secretary", ext: "188", notes: "" },
-  { id: 9,  name: "Intan", dept: "PA & Secretary", ext: "112", notes: "Chairman" },
-  { id: 10, name: "Dinny", dept: "PA & Secretary", ext: "113", notes: "CEO" },
-  { id: 11, name: "Asma",  dept: "PA & Secretary", ext: "111", notes: "" },
-  { id: 86, name: "Dwi",   dept: "PA & Secretary", ext: "311", notes: "" },
+  // --- DEPUTY CEO ---
+  { id: 502, name: "Jones", dept: "Deputy CEO & President", ext: "502", floor: 27 },
 
-  // FINANCE & ACCOUNTING
-  { id: 13, name: "Yayan",      dept: "Finance & Accounting", ext: "120", notes: "" },
-  { id: 14, name: "Merly",      dept: "Finance & Accounting", ext: "122", notes: "" },
-  { id: 15, name: "Maradonna",  dept: "Finance & Accounting", ext: "154", notes: "" },
-  { id: 16, name: "Vanesha",    dept: "Finance & Accounting", ext: "161", notes: "" },
-  { id: 17, name: "Stephanie",  dept: "Finance & Accounting", ext: "167", notes: "" },
-  { id: 18, name: "Lisi",       dept: "Finance & Accounting", ext: "163", notes: "" },
-  { id: 19, name: "Parawinata", dept: "Finance & Accounting", ext: "170", notes: "" },
-  { id: 20, name: "Novitasari", dept: "Finance & Accounting", ext: "171", notes: "" },
-  { id: 21, name: "Mian",       dept: "Finance & Accounting", ext: "169", notes: "" },
-  { id: 22, name: "Evi",        dept: "Finance & Accounting", ext: "168", notes: "" },
-  { id: 23, name: "Rama",       dept: "Finance & Accounting", ext: "172", notes: "" },
-  { id: 24, name: "Winarti",    dept: "Finance & Accounting", ext: "173", notes: "" },
+  // --- PA & SECRETARY / SUPPORT (27th) ---
+  { id: 111, name: "Asma", dept: "PA & Secretary", ext: "111", floor: 27 },
+  { id: 112, name: "Intan", dept: "PA & Secretary", ext: "112", floor: 27 },
+  { id: 113, name: "Dinny", dept: "PA & Secretary", ext: "113", floor: 27 },
+  { id: 188, name: "Ety", dept: "PA & Secretary", ext: "188", floor: 27 },
+  { id: 511, name: "Dwi", dept: "PA & Secretary", ext: "511", floor: 27 },
 
-  // CORPORATE AFFAIRS (kiri atas)
-  { id: 25, name: "Peng Tjoan", dept: "Corporate Affair", ext: "130", notes: "" },
-  { id: 28, name: "Yudha",      dept: "Corporate Affair", ext: "181", notes: "" },
-  { id: 26, name: "Thomas",     dept: "Corporate Affair", ext: "131", notes: "" },
-  { id: 29, name: "Ruby",       dept: "Corporate Affair", ext: "182", notes: "" },
+  // --- CORPORATE AFFAIRS (27th) ---
+  { id: 130, name: "Peng Tjoan", dept: "Corporate Affair", ext: "130", floor: 27 },
+  { id: 131, name: "Thomas", dept: "Corporate Affair", ext: "131", floor: 27 },
+  { id: 181, name: "Yudha", dept: "Corporate Affair", ext: "181", floor: 27 },
+  { id: 182, name: "Ruby", dept: "Corporate Affair", ext: "182", floor: 27 },
 
-  // CORPORATE SECRETARY
-  { id: 30, name: "Natalia", dept: "Corporate Secretary", ext: "140", notes: "" },
-  { id: 31, name: "Yohan",  dept: "Corporate Secretary", ext: "141", notes: "" },
-  { id: 32, name: "Sylvia", dept: "Corporate Secretary", ext: "142", notes: "" },
-  { id: 33, name: "Desi",   dept: "Corporate Secretary", ext: "143", notes: "" },
-  { id: 118,name: "Nancy",  dept: "Corporate Secretary", ext: "152", notes: "" },
-  { id: 119,name: "Nike",   dept: "Corporate Secretary", ext: "504", notes: "" },
+  // --- CORPORATE SECRETARY (27th) ---
+  { id: 140, name: "Natalia", dept: "Corporate Secretary", ext: "140", floor: 27 },
+  { id: 141, name: "Yohan", dept: "Corporate Secretary", ext: "141", floor: 27 },
+  { id: 142, name: "Sylvia", dept: "Corporate Secretary", ext: "142", floor: 27 },
+  { id: 143, name: "Desi", dept: "Corporate Secretary", ext: "143", floor: 27 },
+  { id: 152, name: "Nancy", dept: "Corporate Secretary", ext: "152", floor: 27 },
+  { id: 504, name: "Nike", dept: "Corporate Secretary", ext: "504", floor: 27 },
 
-  // HR & LOGISTICS
-  { id: 37, name: "Javier",                   dept: "HR & Logistic", ext: "195", notes: "" },
-  { id: 38, name: "Sarah (Sec. to Javier)",   dept: "HR & Logistic", ext: "115", notes: "" },
-  { id: 39, name: "Rara",                     dept: "HR & Logistic", ext: "198", notes: "" },
-  { id: 40, name: "Resti - HR",               dept: "HR & Logistic", ext: "185", notes: "" },
-  { id: 120,name: "Nisa - HR",                dept: "HR & Logistic", ext: "187", notes: "" },
-  { id: 41, name: "Bendry - IT",              dept: "HR & Logistic", ext: "197", notes: "" },
-  { id: 42, name: "Rudi - IT",                dept: "HR & Logistic", ext: "196", notes: "" },
-  { id: 36, name: "Noni - GA",                dept: "HR & Logistic", ext: "191", notes: "" },
-  { id: 87, name: "Suryadi - GA",             dept: "HR & Logistic", ext: "189", notes: "" },
-  { id: 34, name: "Susilo - GA",              dept: "HR & Logistic", ext: "162", notes: "" },
+  // --- FINANCE & ACCOUNTING (27th) ---
+  { id: 120, name: "Yayan", dept: "Finance & Accounting", ext: "120", floor: 27 },
+  { id: 154, name: "Maradona", dept: "Finance & Accounting", ext: "154", floor: 27 },
+  { id: 161, name: "Vanesha", dept: "Finance & Accounting", ext: "161", floor: 27 },
+  { id: 167, name: "Stephanie Y.", dept: "Finance & Accounting", ext: "167", floor: 27 },
+  { id: 122, name: "Merly", dept: "Finance & Accounting", ext: "122", floor: 27 },
+  { id: 163, name: "Lisi", dept: "Finance & Accounting", ext: "163", floor: 27 },
+  { id: 170, name: "Parawinata", dept: "Finance & Accounting", ext: "170", floor: 27 },
+  { id: 171, name: "Novitasari", dept: "Finance & Accounting", ext: "171", floor: 27 },
+  { id: 169, name: "Mian", dept: "Finance & Accounting", ext: "169", floor: 27 },
+  { id: 168, name: "Evi", dept: "Finance & Accounting", ext: "168", floor: 27 },
+  { id: 172, name: "Rama", dept: "Finance & Accounting", ext: "172", floor: 27 },
+  { id: 173, name: "Winarti", dept: "Finance & Accounting", ext: "173", floor: 27 },
 
-  // GESIT FOUNDATION
-  { id: 44, name: "Kevin", dept: "Gesit Foundation", ext: "192", notes: "" },
-  { id: 43, name: "Yuni",  dept: "Gesit Foundation", ext: "186", notes: "" },
+  // --- HR & LOGISTIC (27th) ---
+  { id: 195, name: "Javier", dept: "HR & Logistic", ext: "195", floor: 27 },
+  { id: 115, name: "Sarah", dept: "HR & Logistic", ext: "115", floor: 27, role: "Sec. to Javier" },
+  { id: 198, name: "Rara", dept: "HR & Logistic", ext: "198", floor: 27 },
+  { id: 185, name: "Resti", dept: "HR & Logistic", ext: "185", floor: 27, role: "HR" },
+  { id: 187, name: "Nisa", dept: "HR & Logistic", ext: "187", floor: 27, role: "HR" },
+  { id: 197, name: "Bendry", dept: "HR & Logistic", ext: "197", floor: 27, role: "IT" },
+  { id: 196, name: "Rudi", dept: "HR & Logistic", ext: "196", floor: 27, role: "IT" },
+  { id: 191, name: "Noni", dept: "HR & Logistic", ext: "191", floor: 27, role: "GA" },
+  { id: 189, name: "Suryadi", dept: "HR & Logistic", ext: "189", floor: 27, role: "GA" },
+  { id: 162, name: "Susilo", dept: "HR & Logistic", ext: "162", floor: 27, role: "GA" },
 
-  // BUSINESS DEVELOPMENT (label di gambar; internalnya Property)
-  { id: 45, name: "Jave",            dept: "Business Development", ext: "201", notes: "" },
-  { id: 52, name: "Corinna",         dept: "Business Development", ext: "302", notes: "" },
-  { id: 121,name: "Greg",            dept: "Business Development", ext: "203", notes: "" },
-  { id: 47, name: "Stefanini",       dept: "Business Development", ext: "203", notes: "" },
-  { id: 48, name: "Elisanti",        dept: "Business Development", ext: "204", notes: "" },
-  { id: 49, name: "Donny T.",        dept: "Business Development", ext: "204", notes: "" },
-  { id: 50, name: "Petrus",          dept: "Business Development", ext: "206", notes: "" },
-  { id: 51, name: "Neysa",           dept: "Business Development", ext: "207", notes: "" },
-  { id: 122,name: "Katherine",       dept: "Business Development", ext: "208", notes: "" },
+  // --- BUSINESS DEVELOPMENT (27th) ---
+  { id: 201, name: "Jave", dept: "Business Development", ext: "201", floor: 27 },
+  { id: 302, name: "Corinna", dept: "Business Development", ext: "302", floor: 27 },
+  { id: 205, name: "Greg", dept: "Business Development", ext: "205", floor: 27 },
+  { id: 203, name: "Stefanini", dept: "Business Development", ext: "203", floor: 27 },
+  { id: 204, name: "Elisanti", dept: "Business Development", ext: "204", floor: 27 },
+  { id: 202, name: "Donny T.", dept: "Business Development", ext: "202", floor: 27 },
+  { id: 206, name: "Petrus", dept: "Business Development", ext: "206", floor: 27 },
+  { id: 207, name: "Neysa", dept: "Business Development", ext: "207", floor: 27 },
+  { id: 208, name: "Katherine", dept: "Business Development", ext: "208", floor: 27 },
 
-  // FINANCIAL INVESTMENT
-  { id: 57, name: "Artika (Sec. to Jave)", dept: "Financial Investment", ext: "114", notes: "" },
-  { id: 58, name: "Ita",                   dept: "Financial Investment", ext: "305", notes: "" },
+  // --- FINANCIAL INVESTMENT (27th) ---
+  { id: 114, name: "Artika", dept: "Financial Investment", ext: "114", floor: 27, role: "Sec. to Jave" },
+  { id: 305, name: "Ita", dept: "Financial Investment", ext: "305", floor: 27 },
 
-  // TRADING
-  { id: 53, name: "Suryadi Hertanto", dept: "Trading", ext: "301", notes: "" },
-  { id: 54, name: "Hilaluddin",       dept: "Trading", ext: "303", notes: "" },
-  { id: 55, name: "Harvey",           dept: "Trading", ext: "304", notes: "" },
-  { id: 56, name: "Ayu",              dept: "Trading", ext: "306", notes: "" },
-  { id: 59, name: "External",         dept: "Trading", ext: "116", notes: "" },
+  // --- TRADING (27th) ---
+  { id: 301, name: "Suryadi Hertanto", dept: "Trading", ext: "301", floor: 27 },
+  { id: 303, name: "Hilaluddin", dept: "Trading", ext: "303", floor: 27 },
+  { id: 304, name: "Harvey", dept: "Trading", ext: "304", floor: 27 },
+  { id: 306, name: "Ayu", dept: "Trading", ext: "306", floor: 27 },
+  { id: 116, name: "External", dept: "Trading", ext: "116", floor: 27 },
 
-  // EXEC / SPECIAL
-  { id: 113, name: "Jones", dept: "Deputy CEO & President", ext: "302", notes: "" },
+  // --- GESIT FOUNDATION (27th) ---
+  { id: 192, name: "Kevin", dept: "Gesit Foundation", ext: "192", floor: 27 },
+  { id: 186, name: "Yuni", dept: "Gesit Foundation", ext: "186", floor: 27 },
 
-  // COMMON FACILITIES – 27th FLOOR (dotted box Widya)
-  { id: 90,  name: "Widya - Receptionist", dept: "Common Rooms", ext: "180/0", notes: "" },
-  { id: 121, name: "Board Room 1",         dept: "Common Rooms", ext: "800", notes: "" },
-  { id: 122, name: "Board Room 2",         dept: "Common Rooms", ext: "801", notes: "" },
-  { id: 123, name: "Conference Room",      dept: "Common Rooms", ext: "802", notes: "" },
-  { id: 124, name: "Meeting Room (Lobby)", dept: "Common Rooms", ext: "803", notes: "" },
-  { id: 125, name: "Sofa Room",            dept: "Common Rooms", ext: "804", notes: "" },
-  { id: 120, name: "Pantry",               dept: "Common Rooms", ext: "190", notes: "" },
+  // --- COMMON (27th) ---
+  { id: 180, name: "Widya", dept: "Receptionist", ext: "180/0", floor: 27 },
+  { id: 800, name: "Board Room 1", dept: "Common Areas", ext: "800", floor: 27 },
+  { id: 801, name: "Board Room 2", dept: "Common Areas", ext: "801", floor: 27 },
+  { id: 802, name: "Conference Room", dept: "Common Areas", ext: "802", floor: 27 },
+  { id: 803, name: "Meeting Room (Lobby)", dept: "Common Areas", ext: "803", floor: 27 },
+  { id: 805, name: "Sofa Room", dept: "Common Areas", ext: "805", floor: 27 },
+  { id: 190, name: "Pantry", dept: "Common Areas", ext: "190", floor: 27 },
 
-  // Gesit Natural Resources – 26th FLOOR (nama & ext dari gambar)
-  { id: 200, name: "Fendra",       dept: "Gesit Natural Resources", ext: "211", notes: "Vice President" },
-  { id: 201, name: "Budhi",        dept: "Gesit Natural Resources", ext: "210", notes: "Vice President" },
-  { id: 202, name: "Husni",        dept: "Gesit Natural Resources", ext: "212", notes: "Vice President" },
-  { id: 203, name: "Yudha",        dept: "Gesit Natural Resources", ext: "209", notes: "Vice President" },
+  // ===============================================
+  // 26th Floor - Gesit Natural Resources
+  // ===============================================
+  
+  // --- VP ---
+  { id: 211, name: "Fendra", dept: "Vice President", ext: "211", floor: 26 },
+  { id: 210, name: "Budhi", dept: "Vice President", ext: "210", floor: 26 },
+  { id: 212, name: "Husni", dept: "Vice President", ext: "212", floor: 26 },
+  { id: 209, name: "Yudha", dept: "Vice President", ext: "209", floor: 26 },
 
-  { id: 204, name: "Dwi Suryati",  dept: "Gesit Natural Resources", ext: "—",   notes: "Office Management" },
-  { id: 205, name: "Dimas",        dept: "Gesit Natural Resources", ext: "—",   notes: "Office Management" },
+  // --- PERMIT & LICENSE (26th) ---
+  { id: 236, name: "Rahmat Hidayat", dept: "Permit & License", ext: "236", floor: 26 },
+  { id: 2400, name: "Novita Sitorus", dept: "Permit & License", ext: "240", floor: 26 },
+  { id: 2401, name: "Diana", dept: "Permit & License", ext: "240", floor: 26 },
+  { id: 2361, name: "Afirlinka", dept: "Permit & License", ext: "236", floor: 26 },
+  { id: 2402, name: "Marissa", dept: "Permit & License", ext: "240", floor: 26 },
+  { id: 2403, name: "Ezra", dept: "Permit & License", ext: "240", floor: 26 },
+  { id: 2404, name: "Adnan", dept: "Permit & License", ext: "240", floor: 26 },
+  { id: 2405, name: "Asep Zaelani", dept: "Permit & License", ext: "240", floor: 26 },
 
-  { id: 206, name: "Puji",         dept: "Gesit Natural Resources", ext: "232", notes: "Information Technology" },
+  // --- FINANCE & ACCOUNTING (26th) ---
+  { id: 228, name: "Afif", dept: "Finance & Accounting", ext: "228", floor: 26 },
+  { id: 226, name: "Said", dept: "Finance & Accounting", ext: "226", floor: 26 },
+  { id: 2281, name: "Hansdi", dept: "Finance & Accounting", ext: "228", floor: 26 },
+  { id: 2261, name: "Pipin Syaripin", dept: "Finance & Accounting", ext: "226", floor: 26 },
 
-  { id: 94,  name: "Tunggul",      dept: "Gesit Natural Resources", ext: "215", notes: "Engineering" },
-  { id: 95,  name: "Titis",        dept: "Gesit Natural Resources", ext: "215", notes: "Engineering (Shared Line)" },
+  // --- PROCUREMENT (26th) ---
+  { id: 223, name: "Yusup", dept: "Procurement", ext: "223", floor: 26 },
+  { id: 2231, name: "Hadly", dept: "Procurement", ext: "223", floor: 26 },
+  { id: 2232, name: "Andrias", dept: "Procurement", ext: "223", floor: 26 },
 
-  { id: 106, name: "Lydia",        dept: "Gesit Natural Resources", ext: "220", notes: "Project" },
+  // --- SALES / MARKETING (26th) ---
+  { id: 2153, name: "Ryandhi", dept: "Sales / Marketing", ext: "215", floor: 26 },
 
-  // HRGA – 26th FLOOR
-  { id: 107, name: "Juni",         dept: "HRGA (26th Floor)", ext: "232", notes: "" },
-  { id: 108, name: "Irsan",        dept: "HRGA (26th Floor)", ext: "232", notes: "Shared Line" },
-  { id: 109, name: "Ayu (HRGA)",   dept: "HRGA (26th Floor)", ext: "230", notes: "" },
-  { id: 110, name: "Aditya",       dept: "HRGA (26th Floor)", ext: "230", notes: "" },
+  // --- IT (26th) ---
+  { id: 2320, name: "Puji", dept: "Information Technology", ext: "232", floor: 26 },
 
-  // BUSINESS UNIT – 26th FLOOR
-  { id: 97,  name: "Aldri",        dept: "Business Unit (26th Floor)", ext: "220", notes: "" },
-  { id: 98,  name: "Ravyiansyah",  dept: "Business Unit (26th Floor)", ext: "220", notes: "" },
+  // --- ENGINEERING (26th) ---
+  { id: 215, name: "Tunggul", dept: "Engineering", ext: "215", floor: 26 },
+  { id: 2152, name: "Titis", dept: "Engineering", ext: "215", floor: 26 },
 
-  // COMMON FACILITIES – 26th FLOOR
-  { id: 115, name: "Pantry",     dept: "Gesit Natural Resources", ext: "241", notes: "Common Area (26th Floor)" },
-  { id: 116, name: "Operator 1", dept: "Gesit Natural Resources", ext: "200", notes: "Common Area (26th Floor)" },
-  { id: 117, name: "Operator 2", dept: "Gesit Natural Resources", ext: "300", notes: "Common Area (26th Floor)" },
+  // --- PROJECT (26th) ---
+  { id: 220, name: "Lydia", dept: "Project", ext: "220", floor: 26 },
+
+  // --- HRGA (26th) ---
+  { id: 2321, name: "Juni", dept: "HRGA", ext: "232", floor: 26 },
+  { id: 2322, name: "Irsan", dept: "HRGA", ext: "232", floor: 26 },
+  { id: 230, name: "Ayu", dept: "HRGA", ext: "230", floor: 26 },
+  { id: 2301, name: "Aditya", dept: "HRGA", ext: "230", floor: 26 },
+
+  // --- BUSINESS UNIT (26th) ---
+  { id: 2201, name: "Aldri", dept: "Business Unit", ext: "220", floor: 26 },
+  { id: 2202, name: "Rayviansyah", dept: "Business Unit", ext: "220", floor: 26 },
+
+  // --- RECEPTION (26th) ---
+  { id: 200, name: "Receptionist", dept: "Front Desk", ext: "200", floor: 26 },
+  { id: 300, name: "Operator", dept: "Front Desk", ext: "300", floor: 26 },
+  { id: 2121, name: "Pantry", dept: "Common Areas", ext: "212", floor: 26 },
 ];
 
 /* ===========================
-   UI helpers
+   Components
 =========================== */
-const PHONE_ICON = (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-  >
-    <path d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6l1.5-2.5 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
-  </svg>
-);
 
-function classNames(...c: Array<string | false | undefined>) {
-  return c.filter(Boolean).join(" ");
-}
-
-/* ===========================
-   Floor detection (department-only)
-=========================== */
-function getFloor(dept: string): 26 | 27 {
-  const floor26Depts = [/Gesit Natural Resources/i, /26th Floor/i];
-  if (floor26Depts.some((rx) => rx.test(dept))) return 26;
-  return 27;
-}
-
-/* ===========================
-   Small components
-=========================== */
-function ExtensionCard({ item }: { item: Extension }) {
-  const initial = item.name.charAt(0).toUpperCase();
-  const floor = getFloor(item.dept);
-  const frameColor =
-    floor === 27
-      ? "border-indigo-200 ring-1 ring-indigo-50"
-      : "border-emerald-200 ring-1 ring-emerald-50";
-  const barColor = floor === 27 ? "bg-indigo-400" : "bg-emerald-400";
-
+// 1. Navbar
+const Navbar = ({ 
+  searchTerm, 
+  setSearchTerm, 
+  floorFilter, 
+  setFloorFilter 
+}: { 
+  searchTerm: string, 
+  setSearchTerm: (s: string) => void, 
+  floorFilter: 'All' | 26 | 27, 
+  setFloorFilter: (f: 'All' | 26 | 27) => void 
+}) => {
   return (
-    <div
-      className={classNames(
-        "relative bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border",
-        frameColor
-      )}
-    >
-      <div className={classNames("absolute left-0 right-0 top-0 h-1 rounded-t-2xl", barColor)} />
-
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center min-w-0 gap-4">
-          <div className="w-12 h-12 rounded-full bg-indigo-600 text-white font-bold text-xl grid place-items-center shadow-sm border-2 border-indigo-300">
-            {initial}
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900 truncate" title={item.name}>
-              {item.name}
-            </h2>
-            <p className="text-sm text-gray-500 truncate" title={item.dept}>
-              {item.dept}
-            </p>
-          </div>
-        </div>
-        <span
-          title="Extension Number"
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xl font-extrabold bg-amber-50 text-amber-700 border-amber-200"
-        >
-          {PHONE_ICON}
-          <span>{item.ext}</span>
-        </span>
-      </div>
-
-      <div
-        className={classNames(
-          "mt-3 text-xs font-medium text-center rounded-lg py-1",
-          floor === 27 ? "bg-indigo-50 text-indigo-700" : "bg-emerald-50 text-emerald-700"
-        )}
-      >
-        Located on {floor}th Floor
-      </div>
-    </div>
-  );
-}
-
-/* ===========================
-   Navbar
-=========================== */
-function Navbar({
-  query,
-  onChange,
-  floorFilter,
-  setFloorFilter,
-}: {
-  query: string;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  floorFilter: "All" | 26 | 27;
-  setFloorFilter: (f: "All" | 26 | 27) => void;
-}) {
-  return (
-    <nav className="sticky top-0 z-40 backdrop-blur bg-white/90 border-b border-indigo-100">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <img src="/logo.png" alt="Gesit logo" className="h-8 w-auto" />
-            <div className="flex flex-col">
-              <h1 className="truncate text-2xl md:text-3xl font-extrabold text-gray-900">
-                Office Extensions Directory <span className="text-indigo-600">(TGC)</span>
-              </h1>
-              <span className="text-xs text-gray-500">Last update: Oct 2025</span>
+    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="py-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            
+            {/* Logo / Title */}
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-200">
+                <Building2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">TGC Internal Directory</h1>
+                <p className="text-xs text-slate-500 font-medium">Updated: Oct 2025</p>
+              </div>
             </div>
-          </div>
 
-          <div className="hidden md:flex items-center gap-2 text-xs text-gray-500">
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded border border-emerald-200 bg-emerald-50">
-              26th Floor
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded border border-indigo-200 bg-indigo-50">
-              27th Floor
-            </span>
-          </div>
-        </div>
+            {/* Search Bar */}
+            <div className="flex-1 max-w-xl relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-slate-400" />
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-inner"
+                placeholder="Search by name, department, or extension..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-        {/* Search + quick filters */}
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="relative md:col-span-3">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-indigo-500"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input
-              id="search-input"
-              type="text"
-              placeholder="Search name, department, or extension..."
-              value={query}
-              onChange={onChange}
-              className="w-full pl-10 pr-4 py-3 text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600"
-            />
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto">
-            {(["All", 26, 27] as const).map((f) => (
-              <button
-                key={String(f)}
-                onClick={() => setFloorFilter(f)}
-                className={classNames(
-                  "px-3 py-2 text-sm rounded-xl border whitespace-nowrap",
-                  floorFilter === f
-                    ? f === 27
-                      ? "bg-indigo-600 text-white border-indigo-600"
-                      : f === 26
-                      ? "bg-emerald-600 text-white border-emerald-600"
-                      : "bg-slate-800 text-white border-slate-800"
-                    : f === 27
-                    ? "bg-white text-gray-700 border-indigo-200 hover:border-indigo-300"
-                    : f === 26
-                    ? "bg-white text-gray-700 border-emerald-200 hover:border-emerald-300"
-                    : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
-                )}
-                aria-pressed={floorFilter === f}
-              >
-                {f === "All" ? "All" : `${f}th Floor`}
-              </button>
-            ))}
+            {/* Floor Filter */}
+            <div className="flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200">
+              {(['All', 27, 26] as const).map((floor) => (
+                <button
+                  key={floor}
+                  onClick={() => setFloorFilter(floor)}
+                  className={`
+                    px-4 py-1.5 text-sm font-semibold rounded-md transition-all
+                    ${floorFilter === floor 
+                      ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200' 
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}
+                  `}
+                >
+                  {floor === 'All' ? 'All Floors' : `${floor}th`}
+                </button>
+              ))}
+            </div>
+
           </div>
         </div>
       </div>
     </nav>
   );
-}
+};
 
-/* ===========================
-   Usage Notes (NOTE PENGGUNAAN)
-=========================== */
-function UsageNotes() {
+// 2. Instructions Panel (The "Notes" requested)
+const InstructionPanel = () => {
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
-    <section className="max-w-7xl mx-auto px-4 md:px-8 mt-4">
-      <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 md:px-6 py-4 text-sm text-gray-800 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-amber-300 bg-white text-xs font-semibold">
-              i
-            </span>
-            <p className="font-semibold">
-              Catatan penggunaan telepon (sesuai internal directory Oct 2025)
-            </p>
+    <div className="mb-8">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-xl shadow-md hover:shadow-lg transition-all"
+      >
+        <div className="flex items-center gap-2">
+          <Info className="w-5 h-5 text-indigo-300" />
+          <span className="font-semibold tracking-wide">Quick Dialing Guide</span>
+        </div>
+        <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">{isOpen ? "Hide" : "Show"}</span>
+      </button>
+
+      {isOpen && (
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          
+          {/* 27th Floor Card */}
+          <div className="bg-white rounded-xl p-5 border-l-4 border-indigo-500 shadow-sm ring-1 ring-slate-200">
+            <h3 className="flex items-center gap-2 text-indigo-700 font-bold mb-3 uppercase text-sm tracking-wider">
+              <MapPin className="w-4 h-4" /> The City Tower 27th Floor (TGC)
+            </h3>
+            <ul className="space-y-3 text-sm text-slate-600">
+              <li className="flex gap-3 items-start">
+                <PhoneIncoming className="w-4 h-4 mt-0.5 text-emerald-500 shrink-0" />
+                <span>
+                  <strong>Pick up Incoming Call:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">#70</code>
+                </span>
+              </li>
+              <li className="flex gap-3 items-start">
+                <PhoneOutgoing className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" />
+                <span>
+                  <strong>Call to 26th Floor:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">##</code> + Ext
+                </span>
+              </li>
+              <li className="flex gap-3 items-start">
+                <Globe className="w-4 h-4 mt-0.5 text-purple-500 shrink-0" />
+                <span>
+                  <strong>Outgoing Call:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">* *</code> + PIN + 9 + No.
+                </span>
+              </li>
+              <li className="flex gap-3 items-start opacity-75">
+                <Globe className="w-4 h-4 mt-0.5 text-slate-400 shrink-0" />
+                <span>
+                  <strong>International:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">* *</code> + PIN + 9 + 01017 + Country + No.
+                </span>
+              </li>
+            </ul>
           </div>
+
+          {/* 26th Floor Card */}
+          <div className="bg-white rounded-xl p-5 border-l-4 border-emerald-500 shadow-sm ring-1 ring-slate-200">
+            <h3 className="flex items-center gap-2 text-emerald-700 font-bold mb-3 uppercase text-sm tracking-wider">
+              <MapPin className="w-4 h-4" /> Gesit Natural Resources (26th Floor)
+            </h3>
+            <ul className="space-y-3 text-sm text-slate-600">
+              <li className="flex gap-3 items-start">
+                <PhoneIncoming className="w-4 h-4 mt-0.5 text-emerald-500 shrink-0" />
+                <span>
+                  <strong>Pick up Incoming Call:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">#41</code> + Ext
+                </span>
+              </li>
+              <li className="flex gap-3 items-start">
+                <PhoneOutgoing className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" />
+                <span>
+                  <strong>Call to 27th Floor:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">88**</code> + PIN + Ext
+                </span>
+              </li>
+              <li className="flex gap-3 items-start">
+                <Globe className="w-4 h-4 mt-0.5 text-purple-500 shrink-0" />
+                <span>
+                  <strong>Outgoing Call:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">81**</code> + PIN + No.
+                </span>
+              </li>
+              <li className="flex gap-3 items-start opacity-75">
+                <span className="w-4 h-4 shrink-0"></span>
+                <span className="text-xs italic text-slate-400">
+                  Note: PIN is required for external calls.
+                </span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 3. Extension Card
+const ExtensionCard: React.FC<{ ext: Extension }> = ({ ext }) => {
+  // Styles based on floor
+  const is27 = ext.floor === 27;
+  const accentColor = is27 ? "bg-indigo-600" : "bg-emerald-600";
+  const lightAccent = is27 ? "bg-indigo-50 text-indigo-700" : "bg-emerald-50 text-emerald-700";
+  const ringColor = is27 ? "group-hover:ring-indigo-200" : "group-hover:ring-emerald-200";
+
+  return (
+    <div className={`
+      group relative bg-white rounded-2xl p-5 shadow-sm border border-slate-100 
+      transition-all duration-300 hover:shadow-md hover:-translate-y-1 ring-2 ring-transparent ${ringColor}
+    `}>
+      <div className="flex justify-between items-start gap-3">
+        
+        {/* Avatar Placeholder */}
+        <div className={`
+          w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm
+          ${accentColor}
+        `}>
+          {ext.name.charAt(0).toUpperCase()}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* 27th Floor */}
-          <div>
-            <p className="text-xs font-semibold uppercase text-gray-500 mb-1">
-              The City Tower 27th Floor (TGC)
-            </p>
-            <ul className="ml-4 list-disc space-y-1">
-              <li>The City Tower 27th Floor</li>
-              <li>Jl. M.H. Thamrin no. 81, Jakarta – 10310</li>
-              <li>Telp: 021 3101601 (Hunting)</li>
-            </ul>
-            <p className="mt-2 font-medium">Cara penggunaan:</p>
-            <ul className="ml-4 list-disc space-y-1">
-              <li>
-                Pick up incoming call:{" "}
-                <span className="font-mono font-semibold">#70</span>
-              </li>
-              <li>
-                Extension call ke Lt. 26:{" "}
-                <span className="font-mono font-semibold">## + Ext Lt. 26</span>
-              </li>
-              <li>
-                Outgoing call:{" "}
-                <span className="font-mono font-semibold">PIN + 9 + Phone No.</span>
-              </li>
-              <li>
-                International call:{" "}
-                <span className="font-mono font-semibold">
-                  PIN + 9 + 01017 + Country + Phone No.
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          {/* 26th Floor */}
-          <div>
-            <p className="text-xs font-semibold uppercase text-gray-500 mb-1">
-              The City Tower 26th Floor (Gesit Natural Resources)
-            </p>
-            <ul className="ml-4 list-disc space-y-1">
-              <li>The City Tower 26th Floor</li>
-              <li>Jl. M.H. Thamrin no. 81, Jakarta – 10310</li>
-              <li>Telp: 021 23599441 (Hunting)</li>
-            </ul>
-            <p className="mt-2 font-medium">Cara penggunaan:</p>
-            <ul className="ml-4 list-disc space-y-1">
-              <li>
-                Outgoing call:{" "}
-                <span className="font-mono font-semibold">
-                  81** + PIN + Phone No.
-                </span>
-              </li>
-              <li>
-                Extension call ke Lt. 27:{" "}
-                <span className="font-mono font-semibold">
-                  88** + PIN + Ext Lt. 27
-                </span>
-              </li>
-              <li>
-                Pick up incoming:{" "}
-                <span className="font-mono font-semibold">
-                  #41 + No. Ext
-                </span>
-              </li>
-            </ul>
-          </div>
+        {/* Extension Number Badge */}
+        <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 rounded-full text-white shadow-sm">
+          <Phone className="w-3.5 h-3.5" />
+          <span className="font-mono text-lg font-bold tracking-wide">{ext.ext}</span>
         </div>
       </div>
-    </section>
+
+      <div className="mt-4">
+        <h3 className="text-lg font-bold text-slate-900 truncate pr-2">{ext.name}</h3>
+        <p className="text-sm text-slate-500 font-medium truncate">{ext.dept}</p>
+        {ext.role && (
+           <p className="text-xs text-slate-400 mt-1 italic">{ext.role}</p>
+        )}
+      </div>
+
+      <div className={`mt-4 inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${lightAccent}`}>
+        <Building2 className="w-3 h-3 mr-1.5" />
+        {ext.floor}th Floor
+      </div>
+    </div>
   );
-}
+};
 
-/* ===========================
-   Main component
-=========================== */
-export default function OfficeExtensionsDirectory() {
-  const [query, setQuery] = useState("");
-  const [floorFilter, setFloorFilter] = useState<"All" | 26 | 27>("All");
+// 4. Main App Component
+export default function App() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [floorFilter, setFloorFilter] = useState<'All' | 26 | 27>('All');
 
-  const sorted = useMemo(
-    () => [...initialExtensions].sort((a, b) => a.name.localeCompare(b.name)),
-    []
-  );
+  const filteredExtensions = useMemo(() => {
+    return DATA.filter((item) => {
+      // 1. Check Floor
+      if (floorFilter !== 'All' && item.floor !== floorFilter) return false;
 
-  const filtered = useMemo(() => {
-    const term = query.toLowerCase().trim();
-    return sorted.filter((item) => {
-      const f = getFloor(item.dept);
-      const floorOk = floorFilter === "All" || f === floorFilter;
-      if (!term) return floorOk;
-      const match =
-        item.name.toLowerCase().includes(term) ||
-        item.dept.toLowerCase().includes(term) ||
-        item.ext.toLowerCase().includes(term) ||
-        item.notes.toLowerCase().includes(term);
-      return floorOk && match;
-    });
-  }, [query, sorted, floorFilter]);
-
-  const onChange = (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
+      // 2. Check Search
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(searchLower) ||
+        item.dept.toLowerCase().includes(searchLower) ||
+        item.ext.includes(searchLower) ||
+        (item.role && item.role.toLowerCase().includes(searchLower))
+      );
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [searchTerm, floorFilter]);
 
   return (
-    <main className="min-h-screen flex flex-col justify-between antialiased bg-gradient-to-b from-indigo-50 to-white">
-      <Navbar
-        query={query}
-        onChange={onChange}
+    <div className="min-h-screen flex flex-col pb-10">
+      <Navbar 
+        searchTerm={searchTerm} 
+        setSearchTerm={setSearchTerm} 
         floorFilter={floorFilter}
         setFloorFilter={setFloorFilter}
       />
 
-      {/* NOTE PENGGUNAAN SESUAI GAMBAR */}
-      <UsageNotes />
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full">
+        
+        <InstructionPanel />
 
-      {/* Content */}
-      <div className="container mx-auto px-4 md:px-8 py-6 max-w-7xl">
-        {filtered.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="list">
-            {filtered.map((item) => (
-              <div key={item.id} role="listitem">
-                <ExtensionCard item={item} />
-              </div>
+        {/* Results Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <LayoutGrid className="w-5 h-5 text-slate-400" />
+            Directory Listings
+          </h2>
+          <span className="text-sm bg-slate-200 text-slate-600 px-2 py-1 rounded-md font-medium">
+            {filteredExtensions.length} results
+          </span>
+        </div>
+
+        {/* Grid */}
+        {filteredExtensions.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredExtensions.map((ext) => (
+              <ExtensionCard key={`${ext.id}-${ext.ext}`} ext={ext} />
             ))}
           </div>
         ) : (
-          <div className="text-center p-12 bg-white rounded-2xl shadow-sm border border-gray-200">
-            <p className="text-lg font-semibold text-gray-700">No matching results found.</p>
-            <p className="text-sm text-gray-500 mt-1">
-              Try another keyword or clear the floor filter.
-            </p>
+          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+            <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-slate-900">No extensions found</h3>
+            <p className="text-slate-500">Try adjusting your search or floor filter.</p>
           </div>
         )}
-      </div>
+      </main>
 
-      <footer className="relative text-center text-sm text-gray-600 py-8 border-t border-gray-200 bg-white/80">
-        <div className="absolute inset-x-0 -top-px h-1 bg-gradient-to-r from-emerald-400 via-slate-200 to-indigo-400" />
-        <div className="container mx-auto px-4 flex items-center justify-center gap-3">
-          <p>
-            © {new Date().getFullYear()} IT Department — The Gesit Companies · Maintained by Rudi
-            Siarudin
-          </p>
-        </div>
+      <footer className="mt-12 border-t border-slate-200 pt-8 text-center">
+        <p className="text-slate-500 text-sm">
+          &copy; 2025 The Gesit Companies. Internal Use Only.
+        </p>
       </footer>
-    </main>
+    </div>
   );
 }
