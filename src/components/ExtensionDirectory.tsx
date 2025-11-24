@@ -10,7 +10,11 @@ import {
   Globe, 
   LayoutGrid,
   MapPin,
-  Users
+  Users,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 /* ===========================
@@ -93,7 +97,7 @@ const DATA: Extension[] = [
   { id: 302, name: "Corinna", dept: "Business Development", ext: "302", floor: 27 },
   { id: 205, name: "Greg", dept: "Business Development", ext: "205", floor: 27 },
   { id: 203, name: "Stefanini", dept: "Business Development", ext: "203", floor: 27 },
-  { id: 204, name: "Eliaanti", dept: "Business Development", ext: "204", floor: 27 },
+  { id: 204, name: "Elisanti", dept: "Business Development", ext: "204", floor: 27 },
   { id: 202, name: "Donny T.", dept: "Business Development", ext: "202", floor: 27 },
   { id: 206, name: "Petrus", dept: "Business Development", ext: "206", floor: 27 },
   { id: 207, name: "Neysa", dept: "Business Development", ext: "207", floor: 27 },
@@ -132,6 +136,10 @@ const DATA: Extension[] = [
   { id: 210, name: "Budhi", dept: "Vice President", ext: "210", floor: 26 },
   { id: 212, name: "Husni", dept: "Vice President", ext: "212", floor: 26 },
   { id: 209, name: "Yudha", dept: "Vice President", ext: "209", floor: 26 },
+
+  // --- OFFICE MANAGEMENT ---
+  { id: 211, name: "Dwi", dept: "Office Management", ext: "213", floor: 26 },
+  { id: 210, name: "Dimas", dept: "Office Management", ext: "232", floor: 26 },
 
   // --- PERMIT & LICENSE (26th) ---
   { id: 236, name: "Rahmat Hidayat", dept: "Permit & License", ext: "236", floor: 26 },
@@ -200,52 +208,56 @@ const Navbar = ({
   setFloorFilter: (f: 'All' | 26 | 27) => void 
 }) => {
   return (
-    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.02)] transition-all duration-500">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             
             {/* Logo / Title */}
-            <div className="flex items-center gap-3">
-              <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-200">
+            <div className="flex items-center gap-3.5 group cursor-default">
+              <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-2.5 rounded-2xl shadow-lg shadow-indigo-200 group-hover:shadow-indigo-300 group-hover:scale-105 transition-all duration-300 ease-out">
                 <Building2 className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight">TGC Internal Directory</h1>
-                <p className="text-xs text-slate-500 font-medium">Updated: Oct 2025</p>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-indigo-700 transition-colors duration-300">TGC Directory</h1>
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mt-1 group-hover:text-indigo-400 transition-colors duration-300">Internal Extension List</span>
               </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="flex-1 max-w-xl relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-slate-400" />
+            {/* Controls Container */}
+            <div className="flex flex-col sm:flex-row gap-3 flex-1 justify-end items-center max-w-2xl w-full">
+              
+              {/* Search Bar */}
+              <div className="relative w-full sm:max-w-xs group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 group-focus-within:scale-110 transition-all duration-300" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-full leading-5 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 sm:text-sm transition-all duration-300 shadow-sm hover:shadow"
+                  placeholder="Find colleague or dept..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-inner"
-                placeholder="Search by name, department, or extension..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
 
-            {/* Floor Filter */}
-            <div className="flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200">
-              {(['All', 27, 26] as const).map((floor) => (
-                <button
-                  key={floor}
-                  onClick={() => setFloorFilter(floor)}
-                  className={`
-                    px-4 py-1.5 text-sm font-semibold rounded-md transition-all
-                    ${floorFilter === floor 
-                      ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200' 
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}
-                  `}
-                >
-                  {floor === 'All' ? 'All Floors' : `${floor}th`}
-                </button>
-              ))}
+              {/* Floor Filter - Pill Style */}
+              <div className="flex items-center p-1.5 bg-slate-100 rounded-full border border-slate-200 shadow-inner w-full sm:w-auto">
+                {(['All', 27, 26] as const).map((floor) => (
+                  <button
+                    key={floor}
+                    onClick={() => setFloorFilter(floor)}
+                    className={`
+                      relative flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-full transition-all duration-300 ease-out
+                      ${floorFilter === floor 
+                        ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 scale-100' 
+                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95 hover:scale-100'}
+                    `}
+                  >
+                    {floor === 'All' ? 'All' : `${floor}th`}
+                  </button>
+                ))}
+              </div>
             </div>
 
           </div>
@@ -255,139 +267,203 @@ const Navbar = ({
   );
 };
 
-// 2. Instructions Panel (The "Notes" requested)
+// 2. Instructions Panel (Enhanced)
 const InstructionPanel = () => {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <div className="mb-8">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-xl shadow-md hover:shadow-lg transition-all"
+    <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+      <div 
+        className={`
+          w-full bg-white rounded-2xl border transition-all duration-500 ease-in-out
+          ${isOpen ? 'border-indigo-100 shadow-lg shadow-indigo-50/50' : 'border-slate-200 shadow-sm'}
+        `}
       >
-        <div className="flex items-center gap-2">
-          <Info className="w-5 h-5 text-indigo-300" />
-          <span className="font-semibold tracking-wide">Quick Dialing Guide</span>
-        </div>
-        <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">{isOpen ? "Hide" : "Show"}</span>
-      </button>
-
-      {isOpen && (
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
-          
-          {/* 27th Floor Card */}
-          <div className="bg-white rounded-xl p-5 border-l-4 border-indigo-500 shadow-sm ring-1 ring-slate-200">
-            <h3 className="flex items-center gap-2 text-indigo-700 font-bold mb-3 uppercase text-sm tracking-wider">
-              <MapPin className="w-4 h-4" /> The City Tower 27th Floor (TGC)
-            </h3>
-            <ul className="space-y-3 text-sm text-slate-600">
-              <li className="flex gap-3 items-start">
-                <PhoneIncoming className="w-4 h-4 mt-0.5 text-emerald-500 shrink-0" />
-                <span>
-                  <strong>Pick up Incoming Call:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">#70</code>
-                </span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <PhoneOutgoing className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" />
-                <span>
-                  <strong>Call to 26th Floor:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">##</code> + Ext
-                </span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Globe className="w-4 h-4 mt-0.5 text-purple-500 shrink-0" />
-                <span>
-                  <strong>Outgoing Call:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">* *</code> + PIN + 9 + No.
-                </span>
-              </li>
-              <li className="flex gap-3 items-start opacity-75">
-                <Globe className="w-4 h-4 mt-0.5 text-slate-400 shrink-0" />
-                <span>
-                  <strong>International:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">* *</code> + PIN + 9 + 01017 + Country + No.
-                </span>
-              </li>
-            </ul>
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between px-6 py-4 bg-transparent hover:bg-slate-50/50 transition-colors duration-300 rounded-t-2xl"
+        >
+          <div className="flex items-center gap-4">
+            <div className={`
+              p-2.5 rounded-xl transition-all duration-300
+              ${isOpen ? 'bg-indigo-100 text-indigo-600 rotate-0' : 'bg-slate-100 text-slate-500 -rotate-12'}
+            `}>
+              <Info className="w-5 h-5" />
+            </div>
+            <div className="text-left">
+              <h3 className={`font-bold transition-colors duration-300 ${isOpen ? 'text-indigo-900' : 'text-slate-900'}`}>
+                Dialing Guide
+              </h3>
+              <p className="text-xs text-slate-500 hidden sm:block font-medium">Quick reference for internal & external calls</p>
+            </div>
           </div>
-
-          {/* 26th Floor Card */}
-          <div className="bg-white rounded-xl p-5 border-l-4 border-emerald-500 shadow-sm ring-1 ring-slate-200">
-            <h3 className="flex items-center gap-2 text-emerald-700 font-bold mb-3 uppercase text-sm tracking-wider">
-              <MapPin className="w-4 h-4" /> Gesit Natural Resources (26th Floor)
-            </h3>
-            <ul className="space-y-3 text-sm text-slate-600">
-              <li className="flex gap-3 items-start">
-                <PhoneIncoming className="w-4 h-4 mt-0.5 text-emerald-500 shrink-0" />
-                <span>
-                  <strong>Pick up Incoming Call:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">#41</code> + Ext
-                </span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <PhoneOutgoing className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" />
-                <span>
-                  <strong>Call to 27th Floor:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">88**</code> + PIN + Ext
-                </span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Globe className="w-4 h-4 mt-0.5 text-purple-500 shrink-0" />
-                <span>
-                  <strong>Outgoing Call:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono">81**</code> + PIN + No.
-                </span>
-              </li>
-              <li className="flex gap-3 items-start opacity-75">
-                <span className="w-4 h-4 shrink-0"></span>
-                <span className="text-xs italic text-slate-400">
-                  Note: PIN is required for external calls.
-                </span>
-              </li>
-            </ul>
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+            {isOpen ? 'Close Guide' : 'View Guide'}
+            {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
+        </button>
 
+        {/* Content */}
+        <div className={`
+          grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
+          ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}
+        `}>
+          <div className="overflow-hidden">
+            <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="h-px bg-slate-100 md:col-span-2 mb-2"></div>
+              
+              {/* 27th Floor Card */}
+              <div className="relative group rounded-2xl p-6 bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-indigo-100 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300">
+                <div className="absolute top-6 bottom-6 left-0 w-1 bg-indigo-500 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <h3 className="flex items-center gap-2 text-indigo-900 font-bold mb-5 uppercase text-xs tracking-wider">
+                  <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md shadow-sm">27</span> The City Tower (TGC)
+                </h3>
+                <ul className="space-y-4 text-sm">
+                  <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300">
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-emerald-500"><PhoneIncoming className="w-3.5 h-3.5" /></div>
+                    <span className="flex-1 font-medium">Pickup Incoming</span>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">#70</code>
+                  </li>
+                  <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-75">
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-blue-500"><PhoneOutgoing className="w-3.5 h-3.5" /></div>
+                    <span className="flex-1 font-medium">Call to 26th</span>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">## + Ext</code>
+                  </li>
+                  <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-100">
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-purple-500"><Globe className="w-3.5 h-3.5" /></div>
+                    <span className="flex-1 font-medium">Outgoing Call</span>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">** + PIN + 9</code>
+                  </li>
+                </ul>
+              </div>
+
+              {/* 26th Floor Card */}
+              <div className="relative group rounded-2xl p-6 bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300">
+                <div className="absolute top-6 bottom-6 left-0 w-1 bg-emerald-500 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <h3 className="flex items-center gap-2 text-emerald-900 font-bold mb-5 uppercase text-xs tracking-wider">
+                  <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md shadow-sm">26</span> Gesit Resources
+                </h3>
+                <ul className="space-y-4 text-sm">
+                  <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300">
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-emerald-500"><PhoneIncoming className="w-3.5 h-3.5" /></div>
+                    <span className="flex-1 font-medium">Pickup Incoming</span>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">#41 + Ext</code>
+                  </li>
+                  <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-75">
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-blue-500"><PhoneOutgoing className="w-3.5 h-3.5" /></div>
+                    <span className="flex-1 font-medium">Call to 27th</span>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">88** + PIN</code>
+                  </li>
+                  <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-100">
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm text-purple-500"><Globe className="w-3.5 h-3.5" /></div>
+                    <span className="flex-1 font-medium">Outgoing Call</span>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">81** + PIN</code>
+                  </li>
+                </ul>
+              </div>
+
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-// 3. Extension Card
-const ExtensionCard: React.FC<{ ext: Extension }> = ({ ext }) => {
-  // Styles based on floor
+// 3. Extension Card (Premium Design)
+const ExtensionCard: React.FC<{ ext: Extension; index: number }> = ({ ext, index }) => {
+  const [copied, setCopied] = useState(false);
   const is27 = ext.floor === 27;
-  const accentColor = is27 ? "bg-indigo-600" : "bg-emerald-600";
-  const lightAccent = is27 ? "bg-indigo-50 text-indigo-700" : "bg-emerald-50 text-emerald-700";
-  const ringColor = is27 ? "group-hover:ring-indigo-200" : "group-hover:ring-emerald-200";
+  
+  // Refined Color Schemes
+  const theme = is27 ? {
+    border: 'border-indigo-100 hover:border-indigo-300',
+    ring: 'focus-within:ring-indigo-500',
+    bg: 'bg-indigo-600',
+    text: 'text-indigo-900',
+    badge: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    gradient: 'from-indigo-500 to-indigo-600',
+    accent: 'text-indigo-600',
+    shadowHover: 'hover:shadow-indigo-500/10'
+  } : {
+    border: 'border-emerald-100 hover:border-emerald-300',
+    ring: 'focus-within:ring-emerald-500',
+    bg: 'bg-emerald-600',
+    text: 'text-emerald-900',
+    badge: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    gradient: 'from-emerald-500 to-emerald-600',
+    accent: 'text-emerald-600',
+    shadowHover: 'hover:shadow-emerald-500/10'
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(ext.ext);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Stagger animation calculation (capped at 20 items to prevent huge delays on long lists)
+  const delay = Math.min(index * 50, 600); 
 
   return (
-    <div className={`
-      group relative bg-white rounded-2xl p-5 shadow-sm border border-slate-100 
-      transition-all duration-300 hover:shadow-md hover:-translate-y-1 ring-2 ring-transparent ${ringColor}
-    `}>
-      <div className="flex justify-between items-start gap-3">
+    <div 
+      className={`
+        group relative bg-white rounded-2xl p-5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] border ${theme.border}
+        transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] 
+        hover:-translate-y-1.5 hover:shadow-xl ${theme.shadowHover}
+        animate-fade-in-up
+      `}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {/* Top Decorative Line */}
+      <div className={`absolute top-0 inset-x-6 h-1 rounded-b-full bg-gradient-to-r ${theme.gradient} opacity-80 group-hover:scale-x-110 transition-transform duration-500`} />
+
+      <div className="flex justify-between items-start gap-4 mt-2">
         
-        {/* Avatar Placeholder */}
+        {/* Avatar */}
         <div className={`
-          w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm
-          ${accentColor}
+          w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-md
+          bg-gradient-to-br ${theme.gradient} group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
         `}>
           {ext.name.charAt(0).toUpperCase()}
         </div>
 
-        {/* Extension Number Badge */}
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 rounded-full text-white shadow-sm">
-          <Phone className="w-3.5 h-3.5" />
-          <span className="font-mono text-lg font-bold tracking-wide">{ext.ext}</span>
-        </div>
+        {/* Extension Badge & Copy */}
+        <button 
+          onClick={handleCopy}
+          className={`
+            flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-xl border transition-all duration-200 active:scale-95
+            ${theme.badge} hover:brightness-95 group-hover:shadow-sm
+          `}
+          title="Click to copy"
+        >
+          <Phone className="w-3.5 h-3.5 opacity-70" />
+          <span className="font-mono text-lg font-bold tracking-tight">{ext.ext}</span>
+          <div className="ml-1 pl-2 border-l border-current/20">
+            {copied ? <Check className="w-3.5 h-3.5 animate-bounce" /> : <Copy className="w-3.5 h-3.5 opacity-50" />}
+          </div>
+        </button>
       </div>
 
-      <div className="mt-4">
-        <h3 className="text-lg font-bold text-slate-900 truncate pr-2">{ext.name}</h3>
-        <p className="text-sm text-slate-500 font-medium truncate">{ext.dept}</p>
+      <div className="mt-5 space-y-1">
+        <h3 className="text-lg font-bold text-slate-900 truncate leading-tight group-hover:text-indigo-900 transition-colors duration-300">
+          {ext.name}
+        </h3>
+        <p className="text-sm font-medium text-slate-500 truncate group-hover:text-slate-600 transition-colors">{ext.dept}</p>
+        
         {ext.role && (
-           <p className="text-xs text-slate-400 mt-1 italic">{ext.role}</p>
+           <div className="pt-2 flex items-center gap-2">
+             <span className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-indigo-300 transition-colors"></span>
+             <p className="text-xs text-slate-400 italic group-hover:text-slate-500 transition-colors">{ext.role}</p>
+           </div>
         )}
       </div>
 
-      <div className={`mt-4 inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${lightAccent}`}>
-        <Building2 className="w-3 h-3 mr-1.5" />
-        {ext.floor}th Floor
+      <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between text-xs">
+        <div className={`flex items-center gap-1.5 font-semibold ${theme.accent} opacity-80 group-hover:opacity-100 transition-opacity`}>
+          <MapPin className="w-3.5 h-3.5" />
+          {ext.floor}th Floor
+        </div>
       </div>
     </div>
   );
@@ -415,7 +491,7 @@ export default function App() {
   }, [searchTerm, floorFilter]);
 
   return (
-    <div className="min-h-screen flex flex-col pb-10">
+    <div className="min-h-screen flex flex-col pb-10 bg-slate-50/50 selection:bg-indigo-100 selection:text-indigo-900 font-sans">
       <Navbar 
         searchTerm={searchTerm} 
         setSearchTerm={setSearchTerm} 
@@ -428,36 +504,56 @@ export default function App() {
         <InstructionPanel />
 
         {/* Results Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-            <LayoutGrid className="w-5 h-5 text-slate-400" />
-            Directory Listings
-          </h2>
-          <span className="text-sm bg-slate-200 text-slate-600 px-2 py-1 rounded-md font-medium">
-            {filteredExtensions.length} results
+        <div className="flex items-end justify-between mb-6 border-b border-slate-200 pb-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          <div>
+             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-indigo-500" />
+              Directory
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">Find extension numbers for TGC & Gesit Resources</p>
+          </div>
+         
+          <span className="text-xs font-semibold bg-white text-slate-500 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+            {filteredExtensions.length} Contacts
           </span>
         </div>
 
         {/* Grid */}
         {filteredExtensions.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredExtensions.map((ext) => (
-              <ExtensionCard key={`${ext.id}-${ext.ext}`} ext={ext} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12">
+            {filteredExtensions.map((ext, index) => (
+              <ExtensionCard key={`${ext.id}-${ext.ext}`} ext={ext} index={index} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-            <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-medium text-slate-900">No extensions found</h3>
-            <p className="text-slate-500">Try adjusting your search or floor filter.</p>
+          <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200 shadow-sm animate-fade-in-up">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+              <Users className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">No contacts found</h3>
+            <p className="text-slate-500 max-w-xs mx-auto mt-1">We couldn't find any matches for "{searchTerm}". Try a different keyword.</p>
+            <button 
+              onClick={() => {setSearchTerm(''); setFloorFilter('All');}}
+              className="mt-6 px-6 py-2.5 bg-white border border-slate-300 rounded-full text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-300 shadow-sm hover:shadow-md"
+            >
+              Clear Filters
+            </button>
           </div>
         )}
       </main>
 
-      <footer className="mt-12 border-t border-slate-200 pt-8 text-center">
-        <p className="text-slate-500 text-sm">
-          &copy; 2025 The Gesit Companies. Internal Use Only.
-        </p>
+      <footer className="mt-auto border-t border-slate-200 bg-white/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+          <div className="flex items-center gap-2">
+             <Building2 className="w-4 h-4 text-slate-400" />
+             <span>&copy; 2025 The Gesit Companies</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <span className="hover:text-indigo-600 transition-colors cursor-default">IT Department</span>
+            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+            <span>Internal Use Only</span>
+          </div>
+        </div>
       </footer>
     </div>
   );
