@@ -327,12 +327,12 @@ const InstructionPanel = () => {
                   <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-75">
                     <div className="p-1.5 bg-white rounded-lg shadow-sm text-blue-500"><PhoneOutgoing className="w-3.5 h-3.5" /></div>
                     <span className="flex-1 font-medium">Call to 26th</span>
-                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">## + Ext</code>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">## + Ext lt. 26</code>
                   </li>
                   <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-100">
                     <div className="p-1.5 bg-white rounded-lg shadow-sm text-purple-500"><Globe className="w-3.5 h-3.5" /></div>
                     <span className="flex-1 font-medium">Outgoing Call</span>
-                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">** + PIN + 9</code>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">* + PIN + 9 + Phone No</code>
                   </li>
                 </ul>
               </div>
@@ -352,7 +352,7 @@ const InstructionPanel = () => {
                   <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-75">
                     <div className="p-1.5 bg-white rounded-lg shadow-sm text-blue-500"><PhoneOutgoing className="w-3.5 h-3.5" /></div>
                     <span className="flex-1 font-medium">Call to 27th</span>
-                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">88** + PIN</code>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">88** + PIN + Ext. lt27</code>
                   </li>
                   <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-100">
                     <div className="p-1.5 bg-white rounded-lg shadow-sm text-purple-500"><Globe className="w-3.5 h-3.5" /></div>
