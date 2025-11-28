@@ -97,7 +97,7 @@ const DATA: Extension[] = [
   { id: 302, name: "Corinna", dept: "Business Development", ext: "302", floor: 27 },
   { id: 205, name: "Greg", dept: "Business Development", ext: "205", floor: 27 },
   { id: 203, name: "Stefanini", dept: "Business Development", ext: "203", floor: 27 },
-  { id: 204, name: "Elisanti", dept: "Business Development", ext: "204", floor: 27 },
+  { id: 204, name: "Eliaanti", dept: "Business Development", ext: "204", floor: 27 },
   { id: 202, name: "Donny T.", dept: "Business Development", ext: "202", floor: 27 },
   { id: 206, name: "Petrus", dept: "Business Development", ext: "206", floor: 27 },
   { id: 207, name: "Neysa", dept: "Business Development", ext: "207", floor: 27 },
