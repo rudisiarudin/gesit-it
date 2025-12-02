@@ -357,7 +357,7 @@ const InstructionPanel = () => {
                   <li className="flex gap-3 items-center text-slate-600 group-hover:translate-x-1 transition-transform duration-300 delay-100">
                     <div className="p-1.5 bg-white rounded-lg shadow-sm text-purple-500"><Globe className="w-3.5 h-3.5" /></div>
                     <span className="flex-1 font-medium">Outgoing Call</span>
-                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">81** + PIN</code>
+                    <code className="bg-white border border-slate-200 px-2.5 py-1 rounded-md text-slate-700 font-mono font-bold text-xs shadow-sm">81** + PIN + Phone No</code>
                   </li>
                 </ul>
               </div>
