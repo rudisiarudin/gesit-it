@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { addNetworkDevice } from './nama_file_fungsi_anda'; // Sesuaikan import
+import { addNetworkDevice } from '@/lib/networkActions'; // Sesuaikan import
 
 export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) {
   const [formData, setFormData] = useState({
