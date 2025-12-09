@@ -14,7 +14,8 @@ import {
   Cpu,
   Package,
   Users,
-  Boxes, // ✅ ikon baru untuk Asset GBP
+  Boxes,
+  Link as LinkIcon, // 👈 Import ikon Link untuk Network & Wiring
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -119,8 +120,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     {
       href: "/dashboard/gbp-assets",
       label: "GNR Asset",
-      icon: <Boxes size={18} />, // ✅ beda ikon dari GA Asset
+      icon: <Boxes size={18} />,
       groups: ["GBP"],
+    },
+    // 👇👇👇 MENU BARU: Network & Wiring 👇👇👇
+    {
+      href: "/dashboard/network-wiring",
+      label: "Network & Wiring",
+      icon: <LinkIcon size={18} />, // Menggunakan LinkIcon (di-alias dari Link)
+      groups: ["IT"], // Hanya terlihat oleh grup IT
     },
   ];
 
@@ -242,5 +250,3 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
-
