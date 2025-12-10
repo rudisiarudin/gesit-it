@@ -2,17 +2,16 @@
 
 import { Cloud, Server, Monitor, HardHat, Camera, Wifi } from 'lucide-react';
 
-// --- Interface Data Node (untuk Diagram) ---
+// --- Komponen Node Individual ---
 interface SchemaNodeProps {
   name: string;
   type: string;
   ip: string;
   description: string;
   icon: React.ReactNode;
-  color: string; // Warna untuk border/background node
+  color: string;
 }
 
-// --- Komponen Individual Node ---
 const SchemaNode: React.FC<SchemaNodeProps> = ({ name, type, ip, description, icon, color }) => (
   <div className={`p-3 rounded-xl shadow-md border-t-4 ${color} bg-white text-center w-40 flex flex-col items-center justify-center`}>
     <div className={`p-2 rounded-full mb-1 ${color} bg-opacity-10`}>
@@ -30,7 +29,7 @@ export default function NetworkSchemaView() {
   return (
     <div className="flex flex-col items-center p-8 bg-gray-50 rounded-xl min-h-[600px] border border-dashed">
       
-      {/* 1. LAYER CLOUD (Tertinggi) */}
+      {/* 1. LAYER CLOUD */}
       <div className="mb-4">
         <SchemaNode
           name="ISP Cloud"
@@ -55,7 +54,6 @@ export default function NetworkSchemaView() {
           icon={<Server size={20} />}
           color="border-blue-500"
         />
-        {/* Label di garis penghubung */}
         <span className="absolute -left-10 top-1/2 transform -translate-y-1/2 text-[10px] text-blue-500 font-semibold">WAN</span>
       </div>
 
@@ -72,7 +70,6 @@ export default function NetworkSchemaView() {
           icon={<Server size={20} />}
           color="border-green-500"
         />
-        {/* Label di garis penghubung */}
         <span className="absolute -right-10 top-1/2 transform -translate-y-1/2 text-[10px] text-green-500 font-semibold">UPLINK</span>
       </div>
 
@@ -81,8 +78,8 @@ export default function NetworkSchemaView() {
         
         {/* KIRI: Office LAN */}
         <div className="flex flex-col items-center relative pr-10">
-          <div className="absolute top-0 w-px h-4 bg-gray-400" /> {/* Garis vertikal ke Distribution */}
-          <div className="absolute top-4 w-[150px] h-px bg-gray-400 -left-16" /> {/* Garis horizontal */}
+          <div className="absolute top-0 w-px h-4 bg-gray-400" /> 
+          <div className="absolute top-4 w-[150px] h-px bg-gray-400 -left-16" /> 
           
           <span className="text-[10px] text-gray-500 font-semibold mb-2">OFFICE LAN</span>
 
@@ -117,7 +114,7 @@ export default function NetworkSchemaView() {
 
         {/* TENGAH: Surveillance */}
         <div className="flex flex-col items-center relative">
-          <div className="absolute top-0 w-px h-4 bg-gray-400" /> {/* Garis vertikal ke Distribution */}
+          <div className="absolute top-0 w-px h-4 bg-gray-400" /> 
           
           <span className="text-[10px] text-gray-500 font-semibold mb-2">SURVEILLANCE</span>
 
@@ -142,8 +139,8 @@ export default function NetworkSchemaView() {
 
         {/* KANAN: Wireless Access */}
         <div className="flex flex-col items-center relative pl-10">
-          <div className="absolute top-0 w-px h-4 bg-gray-400" /> {/* Garis vertikal ke Distribution */}
-          <div className="absolute top-4 w-[150px] h-px bg-gray-400 -right-16" /> {/* Garis horizontal */}
+          <div className="absolute top-0 w-px h-4 bg-gray-400" /> 
+          <div className="absolute top-4 w-[150px] h-px bg-gray-400 -right-16" /> 
 
           <span className="text-[10px] text-gray-500 font-semibold mb-2">WIRELESS</span>
 
