@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabaseClient";
 // --- Import Komponen Lain ---
 import AddDeviceForm from './AddDeviceForm'; 
 import NetworkSchemaView from './NetworkSchemaView'; 
+import DeviceStatusView from './DeviceStatusView'; // <-- Komponen Status Detail
 
 // --- Interface Data ---
 interface Device {
@@ -55,12 +56,13 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, unit }) 
   </div>
 );
 
-// --- Komponen Kartu Perangkat Jaringan ---
+// --- Komponen Kartu Perangkat Jaringan (Diperbarui untuk View Status) ---
 interface DeviceCardProps {
   device: Device;
+  onViewStatus: (id: number) => void; // <-- Prop Handler Baru
 }
 
-const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
+const DeviceCard: React.FC<DeviceCardProps> = ({ device, onViewStatus }) => {
   const usageColor = device.usage > 75 ? 'text-red-600' : device.usage > 50 ? 'text-blue-700' : 'text-slate-600';
   const portsLabel = device.ports === 0 ? 'N/A' : `${device.ports}`;
 
@@ -99,9 +101,12 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
 
       <div className="mt-4 flex justify-between items-center text-sm">
         <span className="text-gray-600">IP: {device.ip}</span>
-        <a href="#" className="text-blue-600 hover:text-blue-800 font-medium text-xs">
+        <button 
+          onClick={() => onViewStatus(device.id)} // <-- Aksi View Status
+          className="text-blue-600 hover:text-blue-800 font-medium text-xs"
+        >
           View Status
-        </a>
+        </button>
       </div>
     </div>
   );
@@ -125,7 +130,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
                         &times;
                     </button>
                 </div>
-                {/* Konten formulir diletakkan di sini */}
                 <div className="px-6 pb-6 pt-0">
                     {children}
                 </div>
@@ -141,7 +145,8 @@ export default function NetworkDeviceList() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); 
+  const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null); // <-- State untuk Detail View
 
   // Fungsi Fetching Data (Dibuat dengan useCallback agar bisa dipanggil ulang)
   const fetchDevices = useCallback(async () => {
@@ -174,6 +179,19 @@ export default function NetworkDeviceList() {
       setIsModalOpen(false); 
       fetchDevices(); // Refresh data
   };
+  
+  // Handler untuk membuka Detail View
+  const handleDeviceViewStatus = (deviceId: number) => {
+    setSelectedDeviceId(deviceId);
+  };
+  
+  // Handler untuk menutup Detail View (dipanggil dari DeviceStatusView)
+  const handleCloseStatusView = () => {
+    setSelectedDeviceId(null);
+    // Refresh data list utama jika terjadi update saat di detail view
+    fetchDevices(); 
+  };
+
 
   // Menghitung ringkasan statistik
   const networkSummary = useMemo(() => {
@@ -191,7 +209,19 @@ export default function NetworkDeviceList() {
     };
   }, [devices]);
 
-
+  
+  // Jika ada perangkat yang dipilih, render DeviceStatusView
+  if (selectedDeviceId !== null) {
+      return (
+          <DeviceStatusView 
+              deviceId={selectedDeviceId} 
+              onClose={handleCloseStatusView} 
+              onDeviceUpdated={fetchDevices} 
+          />
+      );
+  }
+  
+  // RENDERING UTAMA (List/Schema View)
   return (
     <>
       {/* Statistik Atas */}
@@ -264,7 +294,11 @@ export default function NetworkDeviceList() {
             {viewMode === 'list' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {devices.map((device) => (
-                  <DeviceCard key={device.id} device={device} />
+                  <DeviceCard 
+                    key={device.id} 
+                    device={device} 
+                    onViewStatus={handleDeviceViewStatus} 
+                  />
                 ))}
               </div>
             )}
