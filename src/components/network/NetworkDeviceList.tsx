@@ -13,50 +13,122 @@ import {
   Menu,
   Loader2,
 } from 'lucide-react';
-import { useState, useEffect, useMemo, useCallback } from 'react'; // Import useCallback
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from "@/lib/supabaseClient"; 
 
 // --- Import Komponen Lain ---
-// Import komponen AddDeviceForm yang sudah Anda buat
-import AddDeviceForm from './AddDeviceForm'; // Sesuaikan path jika AddDeviceForm berada di folder berbeda
-import NetworkSchemaView from './NetworkSchemaView'; // Import komponen Schema
+import AddDeviceForm from './AddDeviceForm'; 
+import NetworkSchemaView from './NetworkSchemaView'; 
 
-// --- Interface Data (Tetap sama) ---
+// --- Interface Data ---
 interface Device {
-// ... (Interface Device tetap sama)
   id: number;
   name: string;
   type: string;
   location: string;
   ports: number;
-  usage: number;
+  usage: number; // Persentase usage
   ip: string;
 }
 
-// ... (Komponen StatCard dan DeviceCard tetap sama) ...
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, unit }) => ( /* ... */ );
-const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => ( /* ... */ );
+// --- Komponen Kartu Statistik ---
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+  unit?: string;
+}
 
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, unit }) => (
+  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+    <div>
+      <p className="text-sm text-gray-500 font-medium mb-1">{title}</p>
+      <div className="text-2xl font-bold text-gray-800">
+        {value}
+        {unit && <span className="text-sm font-medium ml-1 text-gray-600">{unit}</span>}
+      </div>
+    </div>
+    <div className={`p-2 rounded-lg ${color} text-white`}>
+      {icon}
+    </div>
+  </div>
+);
+
+// --- Komponen Kartu Perangkat Jaringan ---
+interface DeviceCardProps {
+  device: Device;
+}
+
+const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
+  const usageColor = device.usage > 75 ? 'text-red-600' : device.usage > 50 ? 'text-blue-700' : 'text-slate-600';
+  const portsLabel = device.ports === 0 ? 'N/A' : `${device.ports}`;
+
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex flex-col hover:shadow-lg transition">
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
+            {device.type.includes('Switch') || device.type.includes('Router') ? <Server size={20} /> : <LinkIcon size={20} />}
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800">{device.name}</h3>
+        </div>
+        <button className="text-gray-400 hover:text-gray-600">
+          <Menu size={18} />
+        </button>
+      </div>
+
+      <p className="text-sm text-gray-500 mb-4">{device.location}</p>
+
+      <div className="grid grid-cols-2 gap-4 border-t pt-4">
+        <div>
+          <p className="text-xs text-gray-500">Ports</p>
+          <p className="text-xl font-bold text-gray-700">{portsLabel}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">Usage</p>
+          <p className={`text-xl font-bold ${usageColor}`}>{device.usage}%</p>
+          <div className="w-full h-1 bg-gray-200 rounded-full mt-1">
+            <div
+              className={`h-1 rounded-full ${device.usage > 75 ? 'bg-red-500' : device.usage > 50 ? 'bg-blue-500' : 'bg-gray-400'}`}
+              style={{ width: `${device.usage}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-between items-center text-sm">
+        <span className="text-gray-600">IP: {device.ip}</span>
+        <a href="#" className="text-blue-600 hover:text-blue-800 font-medium text-xs">
+          View Status
+        </a>
+      </div>
+    </div>
+  );
+};
 
 // --- Komponen Modal (Sederhana) ---
 interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
+    isOpen: boolean;
+    onClose: () => void;
+    children: React.ReactNode;
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
-                <div className="flex justify-end">
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-end p-4 pb-0">
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
                         &times;
                     </button>
                 </div>
-                {children}
+                {/* Konten formulir diletakkan di sini */}
+                <div className="px-6 pb-6 pt-0">
+                    {children}
+                </div>
             </div>
         </div>
     );
@@ -69,7 +141,7 @@ export default function NetworkDeviceList() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false); // <--- STATE MODAL BARU
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fungsi Fetching Data (Dibuat dengan useCallback agar bisa dipanggil ulang)
   const fetchDevices = useCallback(async () => {
@@ -90,17 +162,21 @@ export default function NetworkDeviceList() {
     } finally {
       setLoading(false);
     }
-  }, []); // Dependensi kosong, hanya dijalankan sekali (atau dipanggil dari luar)
+  }, []); 
 
   // Jalankan fetch saat komponen dimuat
   useEffect(() => {
     fetchDevices();
   }, [fetchDevices]);
 
+  // Handler setelah formulir Add Device sukses
+  const handleAddSuccess = () => {
+      setIsModalOpen(false); 
+      fetchDevices(); // Refresh data
+  };
 
-  // Menghitung ringkasan statistik (Tetap sama)
+  // Menghitung ringkasan statistik
   const networkSummary = useMemo(() => {
-    // ... (Logika networkSummary tetap sama) ...
     const totalSwitches = devices.filter(d => d.type.includes('Switch') || d.type.includes('Router')).length;
     const totalPorts = devices.reduce((sum, d) => sum + d.ports, 0);
     const totalUsage = devices.reduce((sum, d) => sum + d.usage, 0);
@@ -115,18 +191,11 @@ export default function NetworkDeviceList() {
     };
   }, [devices]);
 
-  // Handler setelah formulir Add Device sukses
-  const handleAddSuccess = () => {
-      setIsModalOpen(false); // Tutup modal
-      fetchDevices(); // Refresh data list perangkat
-  };
-
 
   return (
     <>
-      {/* Statistik Atas (Tetap sama) */}
+      {/* Statistik Atas */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        {/* ... (StatCard components) ... */}
         <StatCard title="Total Switches" value={networkSummary.totalSwitches} icon={<Globe size={20} />} color="bg-indigo-500" />
         <StatCard title="Total Ports" value={networkSummary.totalPorts} icon={<Activity size={20} />} color="bg-blue-500" />
         <StatCard title="Active Ports" value={networkSummary.activePorts} icon={<BarChart size={20} />} color="bg-green-500" />
@@ -142,32 +211,31 @@ export default function NetworkDeviceList() {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-slate-800">Network Devices</h2>
           <div className="flex items-center gap-3">
-            {/* Tombol View Mode (Tetap sama) */}
+            {/* Tombol View Mode */}
             <div className="flex border rounded-lg overflow-hidden">
-                {/* ... (Tombol List dan Schema) ... */}
-                <button
-                    onClick={() => setViewMode('list')}
-                    className={`flex items-center px-3 py-1 text-sm font-medium transition ${
-                      viewMode === 'list' ? 'bg-gray-200 text-slate-800' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <List size={16} className="mr-1" /> List
-                  </button>
-                  <button
-                    onClick={() => setViewMode('schema')}
-                    className={`flex items-center px-3 py-1 text-sm font-medium transition ${
-                      viewMode === 'schema' ? 'bg-gray-200 text-slate-800' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Grid size={16} className="mr-1" /> Schema
-                  </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center px-3 py-1 text-sm font-medium transition ${
+                  viewMode === 'list' ? 'bg-gray-200 text-slate-800' : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <List size={16} className="mr-1" /> List
+              </button>
+              <button
+                onClick={() => setViewMode('schema')}
+                className={`flex items-center px-3 py-1 text-sm font-medium transition ${
+                  viewMode === 'schema' ? 'bg-gray-200 text-slate-800' : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Grid size={16} className="mr-1" /> Schema
+              </button>
             </div>
             {/* Filter dan Add Device */}
             <button className="flex items-center px-3 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">
                 <Filter size={16} className="mr-1" /> Filter
             </button>
             <button 
-                onClick={() => setIsModalOpen(true)} // <--- AKSI TOMBOL TAMBAH DEVICE
+                onClick={() => setIsModalOpen(true)}
                 className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
             >
               <Plus size={16} className="mr-1" /> Add Device
@@ -175,7 +243,7 @@ export default function NetworkDeviceList() {
           </div>
         </div>
 
-        {/* Tampilan Konten (Loading, Error, List, atau Schema) */}
+        {/* Tampilan Konten */}
         {loading ? (
           <div className="min-h-[300px] flex items-center justify-center text-gray-500">
             <Loader2 className="animate-spin mr-2" size={20} /> Loading data dari Supabase...
@@ -203,7 +271,6 @@ export default function NetworkDeviceList() {
 
             {/* Tampilan Skema Jaringan */}
             {viewMode === 'schema' && (
-              // Asumsi NetworkSchemaView sudah diimpor dan ada di './NetworkSchemaView'
               <NetworkSchemaView /> 
             )}
           </>
@@ -212,7 +279,6 @@ export default function NetworkDeviceList() {
 
       {/* Modal untuk Tambah Device */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          {/* Asumsi AddDeviceForm sudah diimpor dan ada di './AddDeviceForm' */}
           <AddDeviceForm onSuccess={handleAddSuccess} /> 
       </Modal>
     </>
