@@ -59,6 +59,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         setUserRole(profileData.role || null);
         setUserGroups(profileData.groups || []);
 
+        // Logika untuk inisial nama
         const initials = (profileData.full_name || "User")
           .split(" ")
           .map((w: string) => w[0])
@@ -141,6 +142,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     });
   }
 
+  // Filter menu berdasarkan groups pengguna yang login
   const filteredMenuItems = menuItems.filter((item) =>
     item.groups.some((g) => userGroups.includes(g))
   );
@@ -156,7 +158,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       >
         <div className="flex items-center justify-between px-6 h-16 border-b">
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Logo" width={32} height={32} />
+            {/* Ganti dengan path logo Anda */}
+            <Image src="/logo.png" alt="Logo" width={32} height={32} /> 
             <span className="text-lg font-bold text-slate-800">IT Gesit</span>
           </div>
 
@@ -171,6 +174,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         <nav className="mt-4 flex flex-col space-y-1 px-4">
           {filteredMenuItems.map(({ href, label, icon }) => {
+            // Cek apakah link aktif atau merupakan bagian dari sub-path
             const isActive = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
