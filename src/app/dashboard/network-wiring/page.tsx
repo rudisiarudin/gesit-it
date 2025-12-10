@@ -1,29 +1,36 @@
-import { Metadata } from 'next';
-// ⚠️ PERUBAHAN UTAMA: Mengganti NetworkDeviceList dengan NetworkDashboard
-import { NetworkDashboard } from '@/components/network/NetworkDashboard'; 
-import { NetworkDetail } from '@/components/network/NetworkDetail';
+// File: /app/dashboard/network-wiring/page.tsx
 
-export const metadata: Metadata = {
-    title: 'Network & Wiring | IT Gesit',
-};
+'use client'; // Pastikan ini ada karena NetworkDashboard menggunakan useState
 
+import { NetworkDashboard } from '@/components/NetworkWiring/NetworkDashboard';
+import { useRouter } from 'next/navigation';
+import React from 'react';
+
+// Halaman utama untuk Network & Wiring
 export default function NetworkWiringPage() {
-    return (
-        <div className="space-y-6">
-            
-            {/* Header Halaman */}
-            <header className="mb-4">
-                <h1 className="text-3xl font-extrabold text-slate-800">Network & Wiring Dashboard</h1>
-                <p className="text-gray-600">Overview of device health, port status, and network configuration.</p>
-            </header>
+    const router = useRouter();
 
-            {/* Komponen NetworkDashboard:
-              Ini akan menampilkan dua mode:
-              1. Main Overview (List Switch/Topology, menggunakan NetworkDetail untuk Ringkasan Global)
-              2. Detailed Switch View (Manajemen Port dan Visualizer)
-            */}
-            <NetworkDashboard />
+    // Fungsi untuk kembali ke halaman dashboard utama
+    const handleBack = () => {
+        router.push('/dashboard'); 
+    };
+
+    return (
+        <div className="p-6 md:p-10 space-y-6">
+            {/* Header Halaman */}
+            <div className="flex items-center justify-between">
+                <h1 className="text-3xl font-extrabold text-gray-900">
+                    Network & Wiring Management
+                </h1>
+                {/* Opsi tombol back jika diperlukan di masa depan */}
+                {/* <button onClick={handleBack} className="flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <ArrowLeft size={16} className="mr-1" /> Back to Dashboard
+                </button> */}
+            </div>
             
+            <NetworkDashboard 
+                onBack={handleBack} 
+            />
         </div>
     );
 }
