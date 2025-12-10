@@ -11,10 +11,9 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 // =======================================================
-// === 1. DEFINISI TYPES & INTERFACE ===
+// === 1. DEFINISI TYPES & INTERFACE (Gabungan dari types.ts) ===
 // =======================================================
 
-// --- TIPE DATA MODUL JARINGAN (NETWORK) ---
 export enum PortStatus {
     ACTIVE = 'ACTIVE',
     IDLE = 'IDLE',
@@ -46,7 +45,7 @@ export interface NetworkSwitch {
 
 
 // ========================================================
-// === 2. MOCK DATA ===
+// === 2. MOCK DATA (Gabungan dari constants.ts) ===
 // ========================================================
 
 const MOCK_PORTS_SW1: SwitchPort[] = [
@@ -107,7 +106,7 @@ export const MOCK_SWITCHES: NetworkSwitch[] = [
 
 
 // ========================================================
-// === 3. SUB-KOMPONEN YANG DIGABUNGKAN (NetworkDetail) ===
+// === 3. SUB-KOMPONEN LOKAL: NetworkDetail ===
 // ========================================================
 
 interface DetailCardProps {
@@ -141,6 +140,7 @@ const ServiceAllocation: React.FC<{ icon: React.ElementType, label: string, coun
 
 const NetworkDetail: React.FC = () => {
     
+    // Perhitungan Statistik Jaringan Global menggunakan MOCK_SWITCHES
     const networkSummary = useMemo(() => {
         const stats = {
             totalDevices: MOCK_SWITCHES.length,
@@ -187,6 +187,7 @@ const NetworkDetail: React.FC = () => {
         };
     }, []);
 
+    // Pemetaan VLAN
     const vlanMap = useMemo(() => {
         const map = new Map<number, { count: number, devices: Set<string> }>();
         MOCK_SWITCHES.forEach(sw => {
@@ -232,7 +233,7 @@ const NetworkDetail: React.FC = () => {
                                     <div className="flex items-center gap-2"><Tag size={16} className="text-gray-400"/>
                                         <span className="font-semibold text-gray-800">VLAN {v.vlan}</span>
                                     </div>
-                                    <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-medium">{v.count} Ports</span>
+                                    <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-medium">{v.count} Ports}</span>
                                 </li>
                             ))}
                         </ul>
