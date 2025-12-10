@@ -7,15 +7,18 @@ import {
   Clock, 
   Edit2, 
   Loader2,
+  Server,
+  Link as LinkIcon,
   CheckCircle,
-  XCircle
+  XCircle,
+  Save
 } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from "@/lib/supabaseClient"; 
 
 // --- Interfaces Data ---
 
-// Interface dasar perangkat yang akan diambil
+// Interface dasar perangkat (Network Device)
 interface DeviceDetail {
     id: number;
     name: string;
@@ -23,40 +26,97 @@ interface DeviceDetail {
     location: string;
     ip: string;
     ports: number;
-    mac_address?: string;
-    status: string; // Active, Maintenance, dll.
-    // Tambahkan field yang sesuai dengan tampilan detail Anda
+    usage: number; 
+    status: string; 
     uptime_days: number;
     uptime_hours: number;
     uptime_minutes: number;
 }
 
-// Interface untuk data port (simulasi, seharusnya dari tabel terpisah)
-interface PortSummary {
-    port: string;
-    status: 'ACTIVE' | 'IDLE';
-    device: string; // Deskripsi yang terhubung
-    vlan: string | number;
-    type: string; // Uplink, User, dll.
+// Interface Detail Port (Device Port)
+interface PortDetail {
+    id: number;
+    device_id: number;
+    port_number: number;
+    status: 'ACTIVE' | 'IDLE' | 'FAULTY';
+    connected_device: string; 
+    ip_assigned: string; 
+    vlan: number;
+    port_type: string; 
 }
 
 interface DeviceStatusViewProps {
     deviceId: number | null;
     onClose: () => void;
-    onDeviceUpdated: () => void; // Callback untuk refresh list jika ada update
+    onDeviceUpdated: () => void; 
 }
 
-// --- Data Simulasi Port (untuk tampilan) ---
-const mockPortData: PortSummary[] = [
-    { port: 'ETH 1', status: 'IDLE', device: 'Unknown', vlan: '-', type: 'Unknown' },
-    { port: 'ETH 2', status: 'ACTIVE', device: 'CBN ISP', vlan: '-', type: 'Router' },
-    { port: 'ETH 3', status: 'ACTIVE', device: 'LAN Distribution', vlan: 10, type: 'Uplink' },
-    { port: 'ETH 4', status: 'ACTIVE', device: 'LAN Office', vlan: 20, type: 'Uplink' },
-    { port: 'ETH 5', status: 'IDLE', device: 'Unknown', vlan: '-', type: 'Unknown' },
-];
+// --- FUNGSI MOCK/SIMULASI UNTUK PORT ---
+
+/**
+ * Simulasi Fetch Port Data (Menggantikan panggilan Supabase nyata)
+ */
+async function fetchDevicePorts(deviceId: number, totalPorts: number): Promise<PortDetail[]> {
+    // --- Simulasi data yang konsisten dengan total ports ---
+    const ports: PortDetail[] = [];
+    for (let i = 1; i <= totalPorts; i++) {
+        // Mocking status, IP, dan connected_device untuk beberapa port pertama
+        let status: 'ACTIVE' | 'IDLE' | 'FAULTY' = 'IDLE';
+        let connected_device = '-';
+        let ip_assigned = '';
+        let vlan = 1;
+        let port_type = 'USER';
+
+        if (i === 1) { // Port 1: Uplink/WAN
+            status = 'ACTIVE';
+            connected_device = 'WAN/ISP';
+            vlan = 0;
+            port_type = 'WAN';
+        } else if (i === 2) { // Port 2: Distribution Switch
+            status = 'ACTIVE';
+            connected_device = 'Distribution Switch F1';
+            ip_assigned = '192.168.1.10';
+            vlan = 10;
+            port_type = 'UPLINK';
+        } else if (i === 5) { // Port 5: PC User
+            status = 'ACTIVE';
+            connected_device = 'PC User A05';
+            ip_assigned = '192.168.10.50';
+            vlan = 20;
+            port_type = 'PoE';
+        } else if (i > totalPorts - 2) { // Dua port terakhir (Simulasi IDLE/FAULTY)
+            status = i === totalPorts ? 'FAULTY' : 'IDLE';
+            port_type = 'USER';
+        }
+
+        ports.push({
+            id: i + deviceId * 1000,
+            device_id: deviceId,
+            port_number: i,
+            status,
+            connected_device,
+            ip_assigned,
+            vlan,
+            port_type,
+        });
+    }
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
+    return ports;
+}
+
+/**
+ * Simulasi Update Port Data (Menggantikan panggilan Supabase nyata)
+ */
+async function updatePortDetail(portData: PortDetail): Promise<PortDetail> {
+    // --- Simulasi Logic Save ke Supabase 'device_ports' ---
+    console.log(`[DB Sim] Updating Port ${portData.port_number} on Device ${portData.device_id}`, portData);
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+    return portData;
+}
 
 
-// --- Sub Komponen: Form Edit ---
+// --- Sub Komponen: Form Edit Device ---
+// (Ini sama dengan script sebelumnya, untuk edit IP, Nama, Lokasi, dll. di tabel network_devices)
 interface EditFormProps {
     device: DeviceDetail;
     onSave: (updates: Partial<DeviceDetail>) => Promise<void>;
@@ -65,11 +125,22 @@ interface EditFormProps {
 }
 
 const EditDeviceForm: React.FC<EditFormProps> = ({ device, onSave, onCancel, isSaving }) => {
-    const [formData, setFormData] = useState<Partial<DeviceDetail>>(device);
+    // ... (Logika dan JSX EditDeviceForm sama dengan script sebelumnya) ...
+    const [formData, setFormData] = useState<Partial<DeviceDetail>>({
+        name: device.name,
+        ip: device.ip,
+        location: device.location,
+        type: device.type,
+        ports: device.ports,
+        status: device.status,
+    });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type } = e.target;
+        setFormData(prev => ({ 
+            ...prev, 
+            [name]: type === 'number' ? parseInt(value) : value 
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -79,34 +150,49 @@ const EditDeviceForm: React.FC<EditFormProps> = ({ device, onSave, onCancel, isS
 
     return (
         <form onSubmit={handleSubmit} className="p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-lg font-semibold mb-4">Edit Perangkat</h4>
+            <h4 className="text-lg font-semibold mb-4 text-slate-800">Edit Detail Perangkat</h4>
             <div className="grid grid-cols-2 gap-4">
                 <label className="block">
                     <span className="text-gray-700 text-sm">Nama Perangkat</span>
-                    <input type="text" name="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" />
+                    <input type="text" name="name" value={formData.name || ''} onChange={handleChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm" />
                 </label>
                 <label className="block">
                     <span className="text-gray-700 text-sm">Alamat IP</span>
-                    <input type="text" name="ip" value={formData.ip} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" />
+                    <input type="text" name="ip" value={formData.ip || ''} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm" />
                 </label>
                 <label className="block">
-                    <span className="text-gray-700 text-sm">Lokasi</span>
-                    <input type="text" name="location" value={formData.location} onChange={handleChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" />
+                    <span className="text-gray-700 text-sm">Lokasi (Ruangan)</span>
+                    <input type="text" name="location" value={formData.location || ''} onChange={handleChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm" />
                 </label>
                 <label className="block">
-                    <span className="text-gray-700 text-sm">Status</span>
-                    <select name="status" value={formData.status} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                    <span className="text-gray-700 text-sm">Total Ports</span>
+                    <input type="number" name="ports" value={formData.ports || 0} onChange={handleChange} min="0" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm" />
+                </label>
+                <label className="block">
+                    <span className="text-gray-700 text-sm">Tipe</span>
+                    <select name="type" value={formData.type || ''} onChange={handleChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
+                        <option>Router/Switch</option>
+                        <option>Access Switch</option>
+                        <option>Patch Panel</option>
+                        <option>Media Converter</option>
+                        <option>Hub/Repeater</option>
+                    </select>
+                </label>
+                <label className="block">
+                    <span className="text-gray-700 text-sm">Status Operasi</span>
+                    <select name="status" value={formData.status || ''} onChange={handleChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
                         <option>Active</option>
                         <option>Maintenance</option>
                         <option>Pending</option>
+                        <option>Decommissioned</option>
                     </select>
                 </label>
             </div>
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="flex justify-end gap-2 mt-6">
                 <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-100">
                     Batal
                 </button>
-                <button type="submit" disabled={isSaving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                <button type="submit" disabled={isSaving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
                     {isSaving ? <Loader2 size={16} className="animate-spin mr-1 inline-block" /> : 'Simpan Perubahan'}
                 </button>
             </div>
@@ -115,51 +201,156 @@ const EditDeviceForm: React.FC<EditFormProps> = ({ device, onSave, onCancel, isS
 };
 
 
+// --- Sub Komponen: Row Port yang Dapat Diedit ---
+interface EditablePortRowProps {
+    port: PortDetail;
+    onUpdate: (port: PortDetail) => void;
+    isSaving: boolean;
+}
+
+const EditablePortRow: React.FC<EditablePortRowProps> = ({ port, onUpdate, isSaving }) => {
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [tempData, setTempData] = useState<PortDetail>(port);
+
+    const statusColor = {
+        'ACTIVE': 'bg-green-100 text-green-800',
+        'IDLE': 'bg-red-100 text-red-800',
+        'FAULTY': 'bg-yellow-100 text-yellow-800',
+    }[port.status];
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+        setTempData(prev => ({ 
+            ...prev, 
+            [name]: type === 'number' ? parseInt(value) : value 
+        } as PortDetail));
+    };
+
+    const handleSave = () => {
+        onUpdate(tempData);
+        setIsEditMode(false);
+    };
+
+    if (isEditMode) {
+        return (
+            <tr className="bg-blue-50/50">
+                <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">ETH {port.port_number}</td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                    <select name="status" value={tempData.status} onChange={handleChange} className="w-full border rounded p-1 text-xs">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="IDLE">IDLE</option>
+                        <option value="FAULTY">FAULTY</option>
+                    </select>
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                    <input type="text" name="connected_device" value={tempData.connected_device} onChange={handleChange} className="w-full border rounded p-1 text-xs" placeholder="Perangkat Terhubung" />
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                    <input type="text" name="ip_assigned" value={tempData.ip_assigned} onChange={handleChange} className="w-full border rounded p-1 text-xs" placeholder="IP" />
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                    <input type="number" name="vlan" value={tempData.vlan} onChange={handleChange} className="w-full border rounded p-1 text-xs" min="0" />
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                    <select name="port_type" value={tempData.port_type} onChange={handleChange} className="w-full border rounded p-1 text-xs">
+                        <option>USER</option>
+                        <option>UPLINK</option>
+                        <option>WAN</option>
+                        <option>PoE</option>
+                    </select>
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap text-right">
+                    <button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:text-green-800 disabled:opacity-50">
+                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    </button>
+                    <button onClick={() => setIsEditMode(false)} className="text-gray-500 hover:text-gray-700 ml-2">
+                        <XCircle size={16} />
+                    </button>
+                </td>
+            </tr>
+        );
+    }
+
+    return (
+        <tr className="hover:bg-gray-50">
+            <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">ETH {port.port_number}</td>
+            <td className="px-3 py-2 whitespace-nowrap">
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}`}>
+                    {port.status.charAt(0) + port.status.slice(1).toLowerCase()}
+                </span>
+            </td>
+            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-700">{port.connected_device}</td>
+            <td className="px-3 py-2 whitespace-nowrap text-sm font-mono text-blue-600">{port.ip_assigned || '-'}</td>
+            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{port.vlan}</td>
+            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{port.port_type}</td>
+            <td className="px-3 py-2 whitespace-nowrap text-right">
+                <button onClick={() => setIsEditMode(true)} className="text-yellow-600 hover:text-yellow-800">
+                    <Edit2 size={16} />
+                </button>
+            </td>
+        </tr>
+    );
+};
+
+
 // --- Komponen Utama: DeviceStatusView ---
 export default function DeviceStatusView({ deviceId, onClose, onDeviceUpdated }: DeviceStatusViewProps) {
     const [device, setDevice] = useState<DeviceDetail | null>(null);
+    const [ports, setPorts] = useState<PortDetail[]>([]); // State untuk data port
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+    const [isSavingDevice, setIsSavingDevice] = useState(false);
+    const [isSavingPort, setIsSavingPort] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
-    // Fungsi fetch data detail
+    // 1. Fungsi Fetch Device & Port
     const fetchDeviceDetail = useCallback(async () => {
         if (!deviceId) return;
         setLoading(true);
-        const { data, error } = await supabase
-            .from('network_devices')
-            .select('*')
-            .eq('id', deviceId)
-            .single();
+        setFetchError(null);
+        
+        try {
+            // Fetch Detail Perangkat Utama
+            const { data: deviceData, error: deviceError } = await supabase
+                .from('network_devices')
+                .select('id, name, type, location, ip, ports, usage, status')
+                .eq('id', deviceId)
+                .single();
 
-        if (error) {
-            console.error("Error fetching device detail:", error);
+            if (deviceError) throw deviceError;
+
+            const detailedDevice: DeviceDetail = {
+                ...deviceData,
+                uptime_days: 15, uptime_hours: 2, uptime_minutes: 10, 
+            };
+            setDevice(detailedDevice);
+
+            // Fetch Detail Ports (Simulasi)
+            const portData = await fetchDevicePorts(deviceId, detailedDevice.ports);
+            setPorts(portData);
+
+        } catch (error: any) {
+            console.error("Error fetching device data:", error);
+            setFetchError(`Gagal memuat detail: ${error.message}`);
+        } finally {
             setLoading(false);
-            return;
         }
-
-        // Asumsi data dilengkapi field uptime (jika tidak ada di DB, gunakan mock)
-        const detailedData: DeviceDetail = {
-            ...data,
-            uptime_days: 15, // Mock
-            uptime_hours: 2, // Mock
-            uptime_minutes: 10, // Mock
-        };
-        setDevice(detailedData);
-        setLoading(false);
     }, [deviceId]);
 
     useEffect(() => {
         fetchDeviceDetail();
     }, [fetchDeviceDetail]);
 
-    // Fungsi Save Edit
-    const handleSave = async (updates: Partial<DeviceDetail>) => {
+
+    // 2. Fungsi Save Edit Device (tabel network_devices)
+    const handleSaveDevice = async (updates: Partial<DeviceDetail>) => {
         if (!deviceId) return;
-        setIsSaving(true);
+        setIsSavingDevice(true);
         
-        // Hapus field yang tidak boleh di-update di DB (misalnya, field mock)
-        const { uptime_days, uptime_hours, uptime_minutes, ...updatesToSave } = updates;
+        const updatesToSave = {
+            name: updates.name, ip: updates.ip, location: updates.location,
+            type: updates.type, ports: updates.ports, status: updates.status,
+        };
 
         const { error } = await supabase
             .from('network_devices')
@@ -167,54 +358,71 @@ export default function DeviceStatusView({ deviceId, onClose, onDeviceUpdated }:
             .eq('id', deviceId);
 
         if (error) {
-            console.error("Error updating device:", error);
-            setIsSaving(false);
-            alert(`Gagal menyimpan: ${error.message}`);
+            alert(`Gagal menyimpan perubahan perangkat: ${error.message}`);
+            setIsSavingDevice(false);
             return;
         }
 
-        // Update state lokal dan notifikasi
-        setDevice(prev => ({ ...prev!, ...updatesToSave }));
+        // Update state lokal dan trigger refresh
+        setDevice(prev => ({ ...prev!, ...updatesToSave as Partial<DeviceDetail> }));
         setIsEditing(false);
-        setIsSaving(false);
-        onDeviceUpdated(); // Trigger refresh di NetworkDeviceList
+        setIsSavingDevice(false);
+        onDeviceUpdated(); 
+        
+        // Jika jumlah ports berubah, refresh data port
+        if (updates.ports !== device?.ports) {
+            fetchDeviceDetail();
+        }
     };
+    
+    // 3. Fungsi Save Edit Port (tabel device_ports - Simulasi)
+    const handleSavePort = async (updatedPort: PortDetail) => {
+        setIsSavingPort(true);
+        try {
+            // Gunakan fungsi simulasi update ke DB
+            const savedPort = await updatePortDetail(updatedPort);
+            
+            // Update state ports lokal
+            setPorts(prevPorts => 
+                prevPorts.map(p => p.id === savedPort.id ? savedPort : p)
+            );
+        } catch (error: any) {
+             alert(`Gagal menyimpan port: ${error.message}`);
+        } finally {
+            setIsSavingPort(false);
+        }
+    };
+
+
+    // --- Perhitungan Summary ---
+    const summary = useMemo(() => {
+        const totalPorts = device?.ports || 0;
+        const activePorts = ports.filter(p => p.status === 'ACTIVE').length;
+        const idlePorts = ports.filter(p => p.status === 'IDLE').length;
+        const faultyPorts = ports.filter(p => p.status === 'FAULTY').length;
+        const availablePorts = totalPorts - activePorts; // Total port fisik dikurangi yang aktif
+        const activePercentage = totalPorts > 0 ? (activePorts / totalPorts) * 100 : 0;
+        
+        return { totalPorts, activePorts, idlePorts, faultyPorts, availablePorts, activePercentage };
+    }, [device, ports]);
+
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-64 text-gray-500">
-                <Loader2 className="animate-spin mr-2" size={20} /> Memuat detail perangkat...
+            <div className="flex justify-center items-center h-64 text-gray-500 bg-white rounded-xl shadow-lg m-8">
+                <Loader2 className="animate-spin mr-2" size={20} /> Memuat detail perangkat dan port...
             </div>
         );
     }
 
-    if (!device) {
+    if (fetchError || !device) {
         return (
-            <div className="text-center p-8 text-red-500">
-                Detail perangkat tidak ditemukan.
-                <button onClick={onClose} className="mt-4 block mx-auto text-blue-600 hover:text-blue-800">Kembali</button>
+            <div className="text-center p-8 text-red-600 bg-red-50 border border-red-200 rounded-xl shadow-lg m-8">
+                {fetchError || "Detail perangkat tidak ditemukan."}
+                <button onClick={onClose} className="mt-4 block mx-auto text-blue-600 hover:text-blue-800">Kembali ke Daftar</button>
             </div>
         );
     }
-    
-    // Hitung status port
-    const activePorts = mockPortData.filter(p => p.status === 'ACTIVE').length;
-    const idlePorts = mockPortData.filter(p => p.status === 'IDLE').length;
-    const totalPorts = activePorts + idlePorts;
-    const activePercentage = totalPorts > 0 ? (activePorts / totalPorts) * 100 : 0;
-    
-    // Port visualizer simulation (Hanya untuk tampilan)
-    const portGroups = [
-      { start: 1, end: 5, label: 'ETH 1-5' },
-      { start: 6, end: 10, label: 'ETH 6-10' },
-      { start: 11, end: 13, label: 'ETH 11-13' },
-    ];
-    
-    const getPortStatus = (index: number) => {
-        // Mocking status based on index (index 1 to 13)
-        const mockStatuses = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'IDLE', 'IDLE', 'ACTIVE', 'IDLE', 'ACTIVE', 'IDLE', 'IDLE', 'ACTIVE', 'IDLE'];
-        return mockStatuses[index - 1] === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500';
-    };
 
 
     return (
@@ -256,60 +464,18 @@ export default function DeviceStatusView({ deviceId, onClose, onDeviceUpdated }:
                 </div>
             </div>
             
-            {/* Form Edit */}
+            {/* Form Edit Device */}
             {isEditing && (
                 <div className="bg-white p-6 rounded-xl shadow-lg mb-6">
                     <EditDeviceForm 
                         device={device} 
-                        onSave={handleSave} 
+                        onSave={handleSaveDevice} 
                         onCancel={() => setIsEditing(false)} 
-                        isSaving={isSaving}
+                        isSaving={isSavingDevice}
                     />
                 </div>
             )}
             
-
-            {/* Physical Status (Visualizer) */}
-            <div className="bg-white p-6 rounded-xl shadow-lg mb-6">
-                <h3 className="text-xl font-semibold mb-4 text-slate-800">Physical Status</h3>
-                
-                {/* Port Legend */}
-                <div className="flex text-sm mb-4">
-                    <span className="flex items-center mr-4">
-                        <span className="w-3 h-3 bg-green-500 rounded-full mr-1"></span> Active / In-Use
-                    </span>
-                    <span className="flex items-center">
-                        <span className="w-3 h-3 bg-red-500 rounded-full mr-1"></span> Idle / Free
-                    </span>
-                </div>
-                
-                {/* Visualizer Area */}
-                <div className="p-4 bg-gray-100 rounded-lg border border-gray-300 relative">
-                    <div className="text-xs text-gray-500 mb-2">
-                        {device.name} (Simulated 13 Ports)
-                    </div>
-                    <div className="flex justify-between">
-                        {portGroups.map((group, groupIndex) => (
-                            <div key={groupIndex} className="flex flex-col items-center">
-                                <div className="text-xs text-gray-700 mb-2">{group.label}</div>
-                                <div className="flex gap-1">
-                                    {Array.from({ length: group.end - group.start + 1 }).map((_, i) => {
-                                        const portIndex = group.start + i;
-                                        return (
-                                            <div 
-                                                key={portIndex}
-                                                className={`w-4 h-4 rounded-sm border border-gray-400 ${getPortStatus(portIndex)}`}
-                                                title={`Port ${portIndex}: ${getPortStatus(portIndex).includes('green') ? 'Active' : 'Idle'}`}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">Port {group.start} - {group.end}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
 
             {/* Port Allocation dan Summary */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -318,75 +484,75 @@ export default function DeviceStatusView({ deviceId, onClose, onDeviceUpdated }:
                 <div className="bg-white p-6 rounded-xl shadow-lg lg:col-span-1">
                     <h3 className="text-xl font-semibold mb-4 text-slate-800">Port Allocation</h3>
                     <div className="flex flex-col items-center justify-center">
+                        {/* Donut Chart */}
                         <svg width="200" height="200" viewBox="0 0 40 40" className="donut">
-                            {/* Background Circle */}
                             <circle cx="20" cy="20" r="15.91549430918954" fill="#E5E7EB" stroke="#E5E7EB" strokeWidth="8"></circle>
-                            {/* Active Segment (Green) */}
                             <circle 
-                                cx="20" 
-                                cy="20" 
-                                r="15.91549430918954" 
-                                fill="transparent" 
-                                stroke="#10B981" 
-                                strokeWidth="8" 
-                                strokeDasharray={`${activePercentage} ${100 - activePercentage}`} 
-                                strokeDashoffset="25"
+                                cx="20" cy="20" r="15.91549430918954" fill="transparent" stroke="#10B981" strokeWidth="8" 
+                                strokeDasharray={`${summary.activePercentage} ${100 - summary.activePercentage}`} strokeDashoffset="25"
                             ></circle>
-                            {/* Idle Segment (Red) */}
                             <circle 
-                                cx="20" 
-                                cy="20" 
-                                r="15.91549430918954" 
-                                fill="transparent" 
-                                stroke="#EF4444" 
-                                strokeWidth="8" 
-                                strokeDasharray={`${100 - activePercentage} ${activePercentage}`} 
-                                strokeDashoffset={`${25 + activePercentage}`}
+                                cx="20" cy="20" r="15.91549430918954" fill="transparent" stroke="#EF4444" strokeWidth="8" 
+                                strokeDasharray={`${100 - summary.activePercentage} ${summary.activePercentage}`} strokeDashoffset={`${25 + summary.activePercentage}`}
                             ></circle>
                             <g className="chart-text text-center" transform="translate(20, 20)">
                                 <text className="text-xl font-bold text-gray-800" y="0" x="0" textAnchor="middle">
-                                    {totalPorts}
+                                    {summary.totalPorts}
                                 </text>
                                 <text className="text-xs text-gray-500" y="8" x="0" textAnchor="middle">
                                     Total
                                 </text>
                             </g>
                         </svg>
-                        <div className="mt-4 text-center">
-                            <span className="text-sm font-medium block text-green-600">Active: {activePorts}</span>
-                            <span className="text-sm font-medium block text-red-600">Idle: {idlePorts}</span>
+                        <div className="mt-4 w-full px-4">
+                            <div className="flex justify-between text-sm font-medium text-green-600">
+                                <span><CheckCircle size={14} className="inline mr-1"/> Active</span>
+                                <span>{summary.activePorts}</span>
+                            </div>
+                            <div className="flex justify-between text-sm font-medium text-red-600">
+                                <span><XCircle size={14} className="inline mr-1"/> Available (Idle)</span>
+                                <span>{summary.availablePorts}</span>
+                            </div>
+                            <div className="flex justify-between text-sm font-medium text-yellow-600 mt-2 border-t pt-2">
+                                <span>Faulty / Maint</span>
+                                <span>{summary.faultyPorts}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Port List Summary */}
+                {/* Port List Summary (Dapat Diedit) */}
                 <div className="bg-white p-6 rounded-xl shadow-lg lg:col-span-2">
-                    <h3 className="text-xl font-semibold mb-4 text-slate-800">Port List Summary</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-slate-800">Port List Management</h3>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Port</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VLAN</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Port</th>
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device/Desc</th>
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Assigned</th>
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VLAN</th>
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {mockPortData.map((port, index) => (
-                                    <tr key={index}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{port.port}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${port.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                {port.status.charAt(0) + port.status.slice(1).toLowerCase()}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{port.device}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{port.vlan}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{port.type}</td>
-                                    </tr>
+                                {ports.map((port) => (
+                                    <EditablePortRow 
+                                        key={port.id} 
+                                        port={port} 
+                                        onUpdate={handleSavePort} 
+                                        isSaving={isSavingPort}
+                                    />
                                 ))}
+                                {ports.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="text-center py-4 text-gray-500 text-sm">
+                                            Tidak ada port terdaftar untuk perangkat ini. Periksa Total Ports.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
