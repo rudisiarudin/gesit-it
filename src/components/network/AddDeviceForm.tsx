@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { addNetworkDevice } from '@/lib/networkActions'; // Sesuaikan import
+import { addNetworkDevice } from '@/lib/networkActions'; // <-- PATH SUDAH DIKOREKSI
+import { Loader2, Plus } from 'lucide-react'; 
 
 export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) 
     ports: 0,
     usage: 0,
     status: 'Active',
+    department: 'IT', // <-- KOLOM BARU DITAMBAH DI STATE
   });
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -31,9 +33,7 @@ export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) 
 
     try {
       await addNetworkDevice(formData);
-      // Panggil onSuccess untuk menutup modal atau me-refresh list
       onSuccess();
-      alert('Perangkat berhasil ditambahkan!');
     } catch (err: any) {
       setFormError(err.message || "Terjadi kesalahan saat menyimpan data.");
     } finally {
@@ -87,6 +87,21 @@ export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) 
           required 
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
         />
+      </div>
+      
+      {/* Input Department (BARU DITAMBAH) */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">Departemen</label>
+        <select 
+          name="department" 
+          value={formData.department} 
+          onChange={handleChange} 
+          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+        >
+          <option value="IT">IT</option>
+          <option value="GA">GA</option>
+          <option value="General">General</option>
+        </select>
       </div>
 
       {/* Input IP dan Ports */}
