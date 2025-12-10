@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { addNetworkDevice } from '@/lib/networkActions'; // <-- PATH SUDAH DIKOREKSI
+import { addNetworkDevice } from '@/lib/networkActions'; // <-- PATH BENAR
 import { Loader2, Plus } from 'lucide-react'; 
 
 export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) {
@@ -13,7 +13,7 @@ export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) 
     ports: 0,
     usage: 0,
     status: 'Active',
-    department: 'IT', // <-- KOLOM BARU DITAMBAH DI STATE
+    department: 'IT', 
   });
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) 
 
     try {
       await addNetworkDevice(formData);
-      onSuccess();
+      onSuccess(); // Panggil onSuccess untuk menutup modal dan refresh data
     } catch (err: any) {
       setFormError(err.message || "Terjadi kesalahan saat menyimpan data.");
     } finally {
@@ -42,10 +42,10 @@ export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-xl font-bold mb-4">Tambah Perangkat Baru</h2>
+    <form onSubmit={handleSubmit} className="p-2">
+      <h2 className="text-xl font-bold text-slate-800 mb-4">Tambah Perangkat Baru</h2>
       
-      {formError && <div className="p-2 mb-4 text-sm text-red-700 bg-red-100 rounded">{formError}</div>}
+      {formError && <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded border border-red-200">{formError}</div>}
       
       {/* Input Nama */}
       <div className="mb-4">
@@ -89,7 +89,7 @@ export default function AddDeviceForm({ onSuccess }: { onSuccess: () => void }) 
         />
       </div>
       
-      {/* Input Department (BARU DITAMBAH) */}
+      {/* Input Department */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700">Departemen</label>
         <select 
